@@ -1,4 +1,25 @@
 
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+footer {
+  background-color: #dc3545; 
+  color: white;
+  text-align: center;
+  padding: 1rem;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #e3f2fd;
@@ -49,6 +70,14 @@ button:hover, .btn:hover {
 
 a.nav-link {
   font-weight: 500;
+  text-decoration: none;
+  color: white;
+}
+
+a.nav-link {
+  text-decoration: none;
+  font-weight: 500;
+  color: white;
 }
 
 a.nav-link:hover {
