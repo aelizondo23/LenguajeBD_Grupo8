@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import oracledb
-from database import get_connection
+from database import get_connection, get_cursor_data
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -34,15 +34,13 @@ def listar_usuarios():
         conn = get_connection()
         cursor = conn.cursor()
         
-        cursor.execute("""
-            SELECT u.id_usuario, u.nombre_usuario, r.nombre_rol, u.estado
-            FROM usuario u
-            JOIN rol r ON u.id_rol = r.id_rol
-            ORDER BY u.id_usuario
-        """)
+        # Usar el paquete PAQ_ADMIN
+        out_cursor = cursor.var(oracledb.CURSOR)
+        cursor.callproc("PAQ_ADMIN.LISTAR_USUARIOS", [out_cursor])
         
+        data = out_cursor.getvalue().fetchall()
         usuarios = []
-        for row in cursor.fetchall():
+        for row in data:
             usuarios.append({
                 'id_usuario': row[0],
                 'nombre_usuario': row[1],
@@ -71,6 +69,7 @@ def crear_usuario():
     
     try:
         data = request.get_json() or {}
+        print(f"🔍 Datos recibidos para crear usuario: {data}")
         
         # Validar campos requeridos
         required_fields = ['nombre_usuario', 'contrasena', 'id_rol']
@@ -81,52 +80,62 @@ def crear_usuario():
         
         # Validar y convertir id_rol
         try:
-            id_rol = int(data['id_rol'])
+            id_rol = int(str(data['id_rol']).strip())
             if id_rol < 1 or id_rol > 5:
                 print(f"❌ ID de rol inválido: {id_rol}")
                 return jsonify({'error': 'ID de rol debe estar entre 1 y 5'}), 400
-            data['id_rol'] = id_rol
         except (ValueError, TypeError):
             print(f"❌ ID de rol no es numérico: {data['id_rol']}")
             return jsonify({'error': 'ID de rol debe ser un número válido'}), 400
+        
+        print(f"✅ ID de rol convertido: {id_rol} (tipo: {type(id_rol)})")
         
         conn = cursor = None
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Verificar que el usuario no exista
-        cursor.execute("SELECT COUNT(*) FROM usuario WHERE nombre_usuario = ?", [data['nombre_usuario']])
-        if cursor.fetchone()[0] > 0:
-            print(f"❌ Usuario ya existe: {data['nombre_usuario']}")
-            return jsonify({'error': 'El usuario ya existe'}), 409
+        # Usar el paquete PAQ_ADMIN
+        id_usuario_out = cursor.var(oracledb.NUMBER)
         
-        # Obtener el próximo ID
-        cursor.execute("SELECT NVL(MAX(id_usuario), 0) + 1 FROM usuario")
-        nuevo_id = cursor.fetchone()[0]
+        print(f"📤 Llamando procedimiento con parámetros:")
+        print(f"   nombre_usuario: '{data['nombre_usuario']}'")
+        print(f"   contrasena: '{data['contrasena']}'")
+        print(f"   id_rol: {id_rol}")
+        print(f"   estado: '{data.get('estado', 'Activo')}'")
         
-        # Insertar usuario
-        cursor.execute("""
-            INSERT INTO usuario (id_usuario, nombre_usuario, contrasena, id_rol, estado)
-            VALUES (?, ?, ?, ?, ?)
-        """, [
-            nuevo_id,
+        cursor.callproc("PAQ_ADMIN.REGISTRAR_USUARIO", [
             data['nombre_usuario'],
             data['contrasena'],
-            int(data['id_rol']),
-            data.get('estado', 'Activo')
+            id_rol,
+            data.get('estado', 'Activo'),
+            id_usuario_out
         ])
         
-        conn.commit()
+        nuevo_id = int(id_usuario_out.getvalue())
+        print(f"✅ Usuario creado con ID: {nuevo_id}")
         
         return jsonify({
             'mensaje': 'Usuario creado correctamente',
             'id_usuario': nuevo_id
         }), 201
         
+    except oracledb.Error as oracle_error:
+        if conn:
+            conn.rollback()
+        error_msg = str(oracle_error)
+        print(f"❌ Error de Oracle creando usuario: {error_msg}")
+        
+        if "ORA-01722" in error_msg:
+            return jsonify({'error': 'Error de formato de datos. Verifique que el rol sea un número válido.'}), 400
+        elif "ORA-00001" in error_msg:
+            return jsonify({'error': 'El nombre de usuario ya existe.'}), 409
+        else:
+            return jsonify({'error': f'Error de base de datos: {error_msg}'}), 500
+            
     except Exception as e:
         if conn:
             conn.rollback()
-        print(f"❌ Error creando usuario: {e}")
+        print(f"❌ Error general creando usuario: {e}")
         return jsonify({'error': f'Error interno: {str(e)}'}), 500
     finally:
         if cursor:
@@ -149,38 +158,14 @@ def actualizar_usuario(id_usuario):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Construir query dinámicamente
-        updates = []
-        params = []
-        
-        if data.get('nombre_usuario'):
-            updates.append("nombre_usuario = :1")
-            params.append(data['nombre_usuario'])
-        
-        if data.get('contrasena'):
-            updates.append(f"contrasena = :{len(params) + 1}")
-            params.append(data['contrasena'])
-        
-        if data.get('id_rol'):
-            updates.append(f"id_rol = :{len(params) + 1}")
-            params.append(data['id_rol'])
-        
-        if data.get('estado'):
-            updates.append(f"estado = :{len(params) + 1}")
-            params.append(data['estado'])
-        
-        if not updates:
-            return jsonify({'error': 'No hay campos para actualizar'}), 400
-        
-        params.append(id_usuario)
-        query = f"UPDATE usuario SET {', '.join(updates)} WHERE id_usuario = :{len(params)}"
-        
-        cursor.execute(query, params)
-        
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'Usuario no encontrado'}), 404
-        
-        conn.commit()
+        # Usar el paquete PAQ_ADMIN
+        cursor.callproc("PAQ_ADMIN.ACTUALIZAR_USUARIO", [
+            id_usuario,
+            data.get('nombre_usuario'),
+            data.get('contrasena'),
+            data.get('id_rol'),
+            data.get('estado')
+        ])
         
         return jsonify({'mensaje': 'Usuario actualizado correctamente'}), 200
         
@@ -208,13 +193,8 @@ def eliminar_usuario(id_usuario):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # No eliminar físicamente, solo cambiar estado
-        cursor.execute("UPDATE usuario SET estado = 'Inactivo' WHERE id_usuario = :1", [id_usuario])
-        
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'Usuario no encontrado'}), 404
-        
-        conn.commit()
+        # Usar el paquete PAQ_ADMIN
+        cursor.callproc("PAQ_ADMIN.ELIMINAR_USUARIO", [id_usuario])
         
         return jsonify({'mensaje': 'Usuario desactivado correctamente'}), 200
         
@@ -244,15 +224,18 @@ def listar_centros():
         conn = get_connection()
         cursor = conn.cursor()
         
-        cursor.execute("SELECT id_centro, nombre, direccion, telefono FROM centro_donacion ORDER BY id_centro")
+        # Usar el paquete PAQ_ADMIN
+        out_cursor = cursor.var(oracledb.CURSOR)
+        cursor.callproc("PAQ_ADMIN.LISTAR_CENTROS", [out_cursor])
         
+        data = out_cursor.getvalue().fetchall()
         centros = []
-        for row in cursor.fetchall():
+        for row in data:
             centros.append({
                 'id_centro': row[0],
                 'nombre': row[1],
-                'direccion': row[2],
-                'telefono': row[3]
+                'ubicacion': row[2],
+                'tipo': row[3]
             })
         
         return jsonify(centros), 200
@@ -289,23 +272,16 @@ def crear_centro():
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Obtener el próximo ID
-        cursor.execute("SELECT NVL(MAX(id_centro), 0) + 1 FROM centro_donacion")
-        nuevo_id = cursor.fetchone()[0]
-        print(f"Nuevo ID de centro: {nuevo_id}")
+        # Usar el paquete PAQ_ADMIN
+        id_centro_out = cursor.var(oracledb.NUMBER)
         
-        # Insertar centro
-        cursor.execute("""
-            INSERT INTO centro_donacion (id_centro, nombre, direccion, telefono)
-            VALUES (:1, :2, :3, :4)
-        """, [
-            nuevo_id,
+        cursor.callproc("PAQ_ADMIN.REGISTRAR_CENTRO", [
             data['nombre'],
             data.get('direccion', ''),
-            data.get('telefono', '')
+            id_centro_out
         ])
         
-        conn.commit()
+        nuevo_id = int(id_centro_out.getvalue())
         print(f"✅ Centro creado con ID: {nuevo_id}")
         
         return jsonify({
@@ -339,34 +315,12 @@ def actualizar_centro(id_centro):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Construir query dinámicamente
-        updates = []
-        params = []
-        
-        if data.get('nombre'):
-            updates.append("nombre = :1")
-            params.append(data['nombre'])
-        
-        if 'direccion' in data:
-            updates.append(f"direccion = :{len(params) + 1}")
-            params.append(data['direccion'])
-        
-        if 'telefono' in data:
-            updates.append(f"telefono = :{len(params) + 1}")
-            params.append(data['telefono'])
-        
-        if not updates:
-            return jsonify({'error': 'No hay campos para actualizar'}), 400
-        
-        params.append(id_centro)
-        query = f"UPDATE centro_donacion SET {', '.join(updates)} WHERE id_centro = :{len(params)}"
-        
-        cursor.execute(query, params)
-        
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'Centro no encontrado'}), 404
-        
-        conn.commit()
+        # Usar el paquete PAQ_ADMIN
+        cursor.callproc("PAQ_ADMIN.ACTUALIZAR_CENTRO", [
+            id_centro,
+            data.get('nombre'),
+            data.get('direccion')
+        ])
         
         return jsonify({'mensaje': 'Centro actualizado correctamente'}), 200
         
@@ -394,17 +348,8 @@ def eliminar_centro(id_centro):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Verificar que no tenga donaciones asociadas
-        cursor.execute("SELECT COUNT(*) FROM donacion WHERE id_centro = :1", [id_centro])
-        if cursor.fetchone()[0] > 0:
-            return jsonify({'error': 'No se puede eliminar el centro porque tiene donaciones asociadas'}), 409
-        
-        cursor.execute("DELETE FROM centro_donacion WHERE id_centro = :1", [id_centro])
-        
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'Centro no encontrado'}), 404
-        
-        conn.commit()
+        # Usar el paquete PAQ_ADMIN
+        cursor.callproc("PAQ_ADMIN.ELIMINAR_CENTRO", [id_centro])
         
         return jsonify({'mensaje': 'Centro eliminado correctamente'}), 200
         
@@ -434,27 +379,18 @@ def obtener_estadisticas_admin():
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Contar usuarios activos
-        cursor.execute("SELECT COUNT(*) FROM usuario WHERE estado = 'Activo'")
-        total_usuarios = cursor.fetchone()[0]
+        # Usar el paquete PAQ_ADMIN
+        out_cursor = cursor.var(oracledb.CURSOR)
+        cursor.callproc("PAQ_ADMIN.OBTENER_ESTADISTICAS", [out_cursor])
         
-        # Contar centros
-        cursor.execute("SELECT COUNT(*) FROM centro_donacion")
-        total_centros = cursor.fetchone()[0]
-        
-        # Contar donantes
-        cursor.execute("SELECT COUNT(*) FROM donante")
-        total_donantes = cursor.fetchone()[0]
-        
-        # Contar donaciones
-        cursor.execute("SELECT COUNT(*) FROM donacion")
-        total_donaciones = cursor.fetchone()[0]
+        data = out_cursor.getvalue().fetchall()
+        row = data[0] if data else [0, 0, 0, 0]
         
         estadisticas = {
-            'total_usuarios': total_usuarios,
-            'total_centros': total_centros,
-            'total_donantes': total_donantes,
-            'total_donaciones': total_donaciones
+            'total_usuarios': row[0],
+            'total_centros': row[1],
+            'total_donantes': row[2],
+            'total_donaciones': row[3]
         }
         
         return jsonify(estadisticas), 200
