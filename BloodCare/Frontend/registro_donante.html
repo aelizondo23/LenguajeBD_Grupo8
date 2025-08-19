@@ -1,118 +1,313 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registro_donante - BloodCare</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <title>Registrar Donante - BloodCare</title>
+  <style>
+    .alert {
+      margin-top: 20px;
+    }
+    .navbar-brand {
+      font-weight: bold;
+      font-size: 1.5rem;
+    }
+    footer {
+      margin-top: auto;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main {
+      flex: 1;
+    }
+  </style>
 </head>
 
-<script>
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = 'login.html';
-  }
-</script>
-
 <body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
-  <div class="container">
-    <a class="navbar-brand" href="#">BLOODCARE</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
-        <li class="nav-item"><a class="nav-link" href="registro_donante.html">Registrar Donante</a></li>
-        <li class="nav-item"><a class="nav-link" href="registro_donacion.html">Registrar Donación</a></li>
-        <li class="nav-item"><a class="nav-link" href="registro_rechazo.html">Registrar Rechazo</a></li>
-        <li class="nav-item"><a class="nav-link" href="inventario.html">Inventario</a></li>
-        <li class="nav-item"><a class="nav-link" href="estadisticas.html">Estadísticas</a></li>
-        <li class="nav-item"><a class="nav-link" href="bitacora.html">Bitácora</a></li>
-        <li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
-      </ul>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+    <div class="container">
+      <a class="navbar-brand" href="#">BLOODCARE</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link active" href="registro_donante.html">Registrar Donante</a></li>
+          <li class="nav-item"><a class="nav-link" href="registro_donacion.html">Registrar Donación</a></li>
+          <li class="nav-item"><a class="nav-link" href="registro_rechazo.html">Registrar Rechazo</a></li>
+          <li class="nav-item"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item"><a class="nav-link" href="estadisticas.html">Estadísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="bitacora.html">Bitácora</a></li>
+          <li class="nav-item"><a id="nav-login" class="nav-link" href="login.html">Login</a></li>
+          <li class="nav-item"><a id="nav-logout" class="nav-link d-none" href="#" onclick="logout()">Cerrar Sesión</a></li>
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<main
+  <main>
+    <div class="container mt-5">
+      <h2 class="mb-4 text-center">Registrar Donante</h2>
+      
+      <!-- Alert para mostrar mensajes -->
+      <div id="alert-container"></div>
+      
+      <form id="form-donante" class="card p-4 shadow-sm bg-white">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Nombre *</label>
+            <input type="text" name="nombre" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Apellido *</label>
+            <input type="text" name="apellido" class="form-control" required>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">Cédula *</label>
+          <input type="text" name="cedula" class="form-control" required>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Fecha de Nacimiento *</label>
+            <input type="date" name="fecha_nacimiento" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Sexo *</label>
+            <select name="sexo" class="form-select" required>
+              <option value="">Seleccione</option>
+              <option value="F">Femenino</option>
+              <option value="M">Masculino</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="direccion" class="form-control">
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" name="telefono" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Correo Electrónico</label>
+            <input type="email" name="correo" class="form-control">
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">Tipo de Sangre *</label>
+          <select name="tipo_sangre" class="form-select" required>
+            <option value="">Seleccione</option>
+            <option value="1">A+</option>
+            <option value="2">A-</option>
+            <option value="3">B+</option>
+            <option value="4">B-</option>
+            <option value="5">O+</option>
+            <option value="6">O-</option>
+            <option value="7">AB+</option>
+            <option value="8">AB-</option>
+          </select>
+        </div>
+        
+        <div class="d-grid">
+          <button type="submit" class="btn btn-danger btn-lg">
+            <span id="btn-text">Registrar Donante</span>
+            <span id="btn-loading" class="d-none">
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Registrando...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
 
-<div class="container mt-5">
+  <footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
+    © 2025 BLOODCARE. Todos los derechos reservados.
+  </footer>
 
-<h2 class="mb-4">Registrar Donante</h2>
-<form id="form-donante" class="card p-4 shadow-sm bg-white">
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <label class="form-label">Nombre</label>
-      <input type="text" name="nombre" class="form-control" required>
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Apellido</label>
-      <input type="text" name="apellido" class="form-control" required>
-    </div>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Cédula</label>
-    <input type="text" name="cedula" class="form-control" required>
-  </div>
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <label class="form-label">Fecha de Nacimiento</label>
-      <input type="date" name="fecha_nacimiento" class="form-control" required>
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Sexo</label>
-      <select name="sexo" class="form-select">
-        <option value="">Seleccione</option>
-        <option value="F">Femenino</option>
-        <option value="M">Masculino</option>
-      </select>
-    </div>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Dirección</label>
-    <input type="text" name="direccion" class="form-control">
-  </div>
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <label class="form-label">Teléfono</label>
-      <input type="tel" name="telefono" class="form-control">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Correo Electrónico</label>
-      <input type="email" name="correo" class="form-control">
-    </div>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Tipo de Sangre</label>
-    <select name="tipo_sangre" class="form-select">
-      <option value="">Seleccione</option>
-      <option value="A+">A+</option>
-      <option value="A-">A-</option>
-      <option value="B+">B+</option>
-      <option value="B-">B-</option>
-      <option value="O+">O+</option>
-      <option value="O-">O-</option>
-      <option value="AB+">AB+</option>
-      <option value="AB-">AB-</option>
-    </select>
-  </div>
-  <div class="d-grid">
-    <button type="submit" class="btn btn-danger">Registrar Donante</button>
-  </div>
-</form>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Verificar autenticación al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuth();
+    });
 
-</main>
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      const navLogin = document.getElementById('nav-login');
+      const navLogout = document.getElementById('nav-logout');
+      
+      if (!token) {
+        showAlert('No hay sesión activa. Por favor, inicie sesión.', 'warning');
+        navLogin.classList.remove('d-none');
+        navLogout.classList.add('d-none');
+        // Opcional: redirigir al login después de 3 segundos
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 3000);
+        return false;
+      } else {
+        navLogin.classList.add('d-none');
+        navLogout.classList.remove('d-none');
+        return true;
+      }
+    }
 
-<footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
-  © 2025 BLOODCARE. Todos los derechos reservados.
-</footer>
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('usuario');
+      showAlert('Sesión cerrada correctamente', 'success');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 1000);
+    }
 
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/registro_donante.js"></script>
+    function showAlert(message, type) {
+      const alertContainer = document.getElementById('alert-container');
+      const alertClass = type === 'success' ? 'alert-success' : 
+                        type === 'error' ? 'alert-danger' : 
+                        type === 'warning' ? 'alert-warning' : 'alert-info';
+      
+      alertContainer.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+      
+      // Auto-hide después de 5 segundos
+      setTimeout(() => {
+        const alert = alertContainer.querySelector('.alert');
+        if (alert) {
+          alert.remove();
+        }
+      }, 5000);
+    }
+
+    function setLoading(loading) {
+      const btnText = document.getElementById('btn-text');
+      const btnLoading = document.getElementById('btn-loading');
+      const submitBtn = document.querySelector('button[type="submit"]');
+      
+      if (loading) {
+        btnText.classList.add('d-none');
+        btnLoading.classList.remove('d-none');
+        submitBtn.disabled = true;
+      } else {
+        btnText.classList.remove('d-none');
+        btnLoading.classList.add('d-none');
+        submitBtn.disabled = false;
+      }
+    }
+
+    // Manejar el envío del formulario
+    document.getElementById('form-donante').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Verificar autenticación antes de enviar
+      if (!checkAuth()) {
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      setLoading(true);
+      
+      try {
+        const formData = new FormData(this);
+        const data = {};
+        
+        // Convertir FormData a objeto
+        for (let [key, value] of formData.entries()) {
+          data[key] = value.trim();
+        }
+        
+        // Validaciones del frontend
+        if (!data.nombre || !data.apellido || !data.cedula) {
+          throw new Error('Por favor complete todos los campos requeridos (*)');
+        }
+        
+        if (!data.sexo || (data.sexo !== 'M' && data.sexo !== 'F')) {
+          throw new Error('Por favor seleccione un sexo válido');
+        }
+        
+        if (!data.tipo_sangre || data.tipo_sangre === '') {
+          throw new Error('Por favor seleccione un tipo de sangre');
+        }
+        
+        // Preparar datos para el backend
+        const donanteData = {
+          id_donante: data.cedula,
+          cedula: data.cedula,
+          nombre: data.nombre,
+          apellido: data.apellido,
+          direccion: data.direccion || '',
+          fecha_nacimiento: data.fecha_nacimiento, // Ya está en formato YYYY-MM-DD
+          sexo: data.sexo,
+          telefono: data.telefono || '',
+          correo: data.correo || '',
+          id_tipo_sangre: parseInt(data.tipo_sangre) // Convertir a número
+        };
+        
+        console.log('Datos a enviar:', donanteData);
+        
+        const response = await fetch('http://localhost:5000/api/donantes/registrar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(donanteData)
+        });
+        
+        const result = await response.json();
+        console.log('Respuesta del servidor:', result);
+        
+        if (response.ok) {
+          showAlert('¡Donante registrado exitosamente!', 'success');
+          this.reset(); // Limpiar formulario
+        } else {
+          // Manejar diferentes tipos de error
+          let errorMessage = 'Error al registrar donante';
+          
+          if (response.status === 401) {
+            errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+            localStorage.removeItem('token');
+            setTimeout(() => window.location.href = 'login.html', 2000);
+          } else if (response.status === 403) {
+            errorMessage = 'No tiene permisos para registrar donantes';
+          } else if (response.status === 409) {
+            errorMessage = 'El donante ya existe en el sistema';
+          } else if (result.error) {
+            errorMessage = result.error;
+            if (result.detalles && Array.isArray(result.detalles)) {
+              errorMessage += ': ' + result.detalles.join(', ');
+            }
+          }
+          
+          showAlert(errorMessage, 'error');
+        }
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showAlert(error.message || 'Error de conexión con el servidor', 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
 </body>
 </html>
