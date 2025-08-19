@@ -7,6 +7,7 @@ from config import Config
 from auth import auth_bp
 from donantes import donantes_bp
 from donaciones import donaciones_bp
+from admin import admin_bp
 
 def create_app():
     """Factory para crear la aplicación Flask"""
@@ -24,6 +25,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(donantes_bp, url_prefix="/api/donantes")
     app.register_blueprint(donaciones_bp, url_prefix="/api/donaciones")
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
     
     return app
 
@@ -49,6 +51,16 @@ if __name__ == '__main__':
     print("      POST /api/donaciones/registrar")
     print("      GET  /api/donaciones/<id>")
     print("      GET  /api/donaciones/listar")
+    print("   🔧 ADMIN:")
+    print("      GET  /api/admin/usuarios")
+    print("      POST /api/admin/usuarios")
+    print("      PUT  /api/admin/usuarios/<id>")
+    print("      DELETE /api/admin/usuarios/<id>")
+    print("      GET  /api/admin/centros")
+    print("      POST /api/admin/centros")
+    print("      PUT  /api/admin/centros/<id>")
+    print("      DELETE /api/admin/centros/<id>")
+    print("      GET  /api/admin/estadisticas")
     print("=" * 60)
     print("👥 Usuarios disponibles:")
     print("   admin1 / admin123 (Administrador)")
@@ -63,4 +75,3 @@ if __name__ == '__main__':
         host=Config.HOST,
         port=Config.PORT
     )
-

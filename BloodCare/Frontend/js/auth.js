@@ -88,13 +88,23 @@ async function authFetch(url, options = {}) {
 function updateNavUI() {
   const loginLink = document.getElementById("nav-login") || document.querySelector('a[href="login.html"]');
   const logoutBtn = document.getElementById("logoutBtn") || document.getElementById("nav-logout");
+  const adminLink = document.getElementById("nav-admin");
+  
+  // Obtener usuario actual
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
   
   if (isLoggedIn()) {
     if (loginLink) loginLink.classList.add("d-none");
     if (logoutBtn) logoutBtn.classList.remove("d-none");
+    
+    // Mostrar panel admin solo para administradores
+    if (adminLink && usuario.rol === "Administrador") {
+      adminLink.classList.remove("d-none");
+    }
   } else {
     if (loginLink) loginLink.classList.remove("d-none");
     if (logoutBtn) logoutBtn.classList.add("d-none");
+    if (adminLink) adminLink.classList.add("d-none");
   }
 }
 

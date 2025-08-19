@@ -1,65 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
   <title>Inicio - BloodCare</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
-  <div class="container">
-    <a class="navbar-brand" href="#">BLOODCARE</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
-        <li class="nav-item"><a class="nav-link" href="registro_donante.html">Registrar Donante</a></li>
-        <li class="nav-item"><a class="nav-link" href="registro_donacion.html">Registrar Donación</a></li>
-        <li class="nav-item"><a class="nav-link" href="registro_rechazo.html">Registrar Rechazo</a></li>
-        <li class="nav-item"><a class="nav-link" href="inventario.html">Inventario</a></li>
-        <li class="nav-item"><a class="nav-link" href="estadisticas.html">Estadísticas</a></li>
-        <li class="nav-item"><a class="nav-link" href="bitacora.html">Bitácora</a></li>
-        <li class="nav-item"><a id="nav-login" class="nav-link" href="login.html">Login</a></li>
-        <li class="nav-item"><a id="nav-logout" class="nav-link d-none" href="#">Cerrar Sesión</a></li>
-      </ul>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+    <div class="container">
+      <a class="navbar-brand" href="#">BLOODCARE</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link" href="registro_donante.html">Registrar Donante</a></li>
+          <li class="nav-item"><a class="nav-link" href="registro_donacion.html">Registrar Donación</a></li>
+          <li class="nav-item"><a class="nav-link" href="registro_rechazo.html">Registrar Rechazo</a></li>
+          <li class="nav-item"><a id="nav-admin" class="nav-link d-none" href="admin_panel.html">Panel Admin</a></li>
+          <li class="nav-item"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item"><a class="nav-link" href="estadisticas.html">Estadísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="bitacora.html">Bitácora</a></li>
+          <li class="nav-item"><a id="nav-login" class="nav-link" href="login.html">Login</a></li>
+          <li class="nav-item"><a id="nav-logout" class="nav-link d-none" href="#">Cerrar Sesión</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <main>
+    <div class="container mt-5">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="card-title text-danger">Bienvenido a BLOODCARE</h1>
+          <p class="card-text fs-5">
+            Este sistema está diseñado para facilitar la gestión integral del banco de sangre del Hospital San Vicente
+            de Paul.
+            Aquí podrá registrar donaciones, gestionar el inventario de componentes sanguíneos, registrar rechazos,
+            consultar reportes y realizar seguimiento de todas las actividades mediante usuarios autenticados.
+            BLOODCARE garantiza trazabilidad, control y seguridad en cada proceso relacionado con la donación y
+            distribución de sangre.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="container pb-5">
+    <div class="row g-3 g-md-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column align-items-center text-center">
+            <i class="bi bi-person-plus fs-2 text-danger mb-2"></i>
+            <h6 class="mb-2">Registrar Donante</h6>
+            <p class="text-muted small">Cree un nuevo donante con validación.</p>
+            <a href="registro_donante.html" class="btn btn-danger w-100 mt-auto">Ir</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column align-items-center text-center">
+            <i class="bi bi-bag-plus fs-2 text-danger mb-2"></i>
+            <h6 class="mb-2">Registrar Donación</h6>
+            <p class="text-muted small">Capture la donación y refleje inventario.</p>
+            <a href="registro_donacion.html" class="btn btn-danger w-100 mt-auto">Ir</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column align-items-center text-center">
+            <i class="bi bi-clipboard-x fs-2 text-danger mb-2"></i>
+            <h6 class="mb-2">Registrar Rechazo</h6>
+            <p class="text-muted small">Gestione causas y observaciones.</p>
+            <a href="registro_rechazo.html" class="btn btn-danger w-100 mt-auto">Ir</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column align-items-center text-center">
+            <i class="bi bi-box-seam fs-2 text-danger mb-2"></i>
+            <h6 class="mb-2">Inventario</h6>
+            <p class="text-muted small">Consulta por componente y tipo.</p>
+            <a href="inventario.html" class="btn btn-danger w-100 mt-auto">Ir</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column align-items-center text-center">
+            <i class="bi bi-graph-up fs-2 text-danger mb-2"></i>
+            <h6 class="mb-2">Estadísticas</h6>
+            <p class="text-muted small">Indicadores clave y tendencias.</p>
+            <a href="estadisticas.html" class="btn btn-danger w-100 mt-auto">Ir</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column align-items-center text-center">
+            <i class="bi bi-journal-text fs-2 text-danger mb-2"></i>
+            <h6 class="mb-2">Bitácora</h6>
+            <p class="text-muted small">Trazabilidad completa del sistema.</p>
+            <a href="bitacora.html" class="btn btn-danger w-100 mt-auto">Ir</a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</nav>
-<main>
-<div class="container mt-5">
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h1 class="card-title text-danger">Bienvenido a BLOODCARE</h1>
-      <p class="card-text fs-5">
-        Este sistema está diseñado para facilitar la gestión integral del banco de sangre del Hospital San Vicente de Paul.
-        Aquí podrá registrar donaciones, gestionar el inventario de componentes sanguíneos, registrar rechazos, consultar reportes y realizar seguimiento de todas las actividades mediante usuarios autenticados.
-        BLOODCARE garantiza trazabilidad, control y seguridad en cada proceso relacionado con la donación y distribución de sangre.
-      </p>
-    </div>
-  </div>
-</div>
-<div class="container mt-4">
-  <div class="row row-cols-1 row-cols-md-2 g-4">
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="registro_donante.html" class="btn btn-outline-danger w-100">Registrar Donante</a></div></div></div>
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="registro_donacion.html" class="btn btn-outline-danger w-100">Registrar Donación</a></div></div></div>
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="registro_rechazo.html" class="btn btn-outline-danger w-100">Registrar Rechazo</a></div></div></div>
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="inventario.html" class="btn btn-outline-danger w-100">Inventario</a></div></div></div>
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="estadisticas.html" class="btn btn-outline-danger w-100">Estadísticas</a></div></div></div>
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="bitacora.html" class="btn btn-outline-danger w-100">Bitácora</a></div></div></div>
-    <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center"><a href="login.html" class="btn btn-outline-danger w-100">Login</a></div></div></div>
-  </div>
-</div>
-</main>
-<footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
-  © 2025 BLOODCARE. Todos los derechos reservados.
-</footer>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/auth.js"></script>
-<script>wireNavbar();</script>
+  </main>
+  <footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
+    © 2025 BLOODCARE. Todos los derechos reservados.
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script>wireNavbar();</script>
 </body>
+
 </html>

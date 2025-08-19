@@ -14,7 +14,7 @@ def validate_donante_data(data):
     errors = []
     
     # Campos requeridos
-    required_fields = ['nombre', 'apellido', 'fecha_nacimiento', 'sexo', 'id_tipo_sangre']
+    required_fields = ['nombre', 'apellido', 'fecha_nacimiento', 'sexo', 'id_tipo_sangre', 'id_centro']
     for field in required_fields:
         if not data.get(field):
             errors.append(f"Campo {field} es requerido")
@@ -88,6 +88,21 @@ def validate_donante_data(data):
     data['direccion'] = data.get('direccion', '') or ''
     data['telefono'] = data.get('telefono', '') or ''
     data['correo'] = data.get('correo', '') or ''
+    
+    # Validar centro de donación (ahora opcional, se usa el configurado)
+    if data.get('id_centro'):
+        try:
+            centro = int(data['id_centro'])
+            if centro < 1 or centro > 3:
+                errors.append("Centro de donación debe estar entre 1 y 3")
+            data['id_centro'] = centro
+            print(f"Centro de donación: {data['id_centro']}")
+        except ValueError:
+            errors.append("Centro de donación debe ser numérico")
+    else:
+        # Si no se especifica centro, usar el por defecto (1)
+        data['id_centro'] = 1
+        print(f"Centro de donación por defecto: {data['id_centro']}")
     
     if errors:
         print(f"❌ Errores de validación: {errors}")
@@ -170,8 +185,37 @@ def registrar_donante():
             ])
             
             conn.commit()
-            print("✅ Donante registrado correctamente")
-            return jsonify({'mensaje': 'Donante registrado correctamente'}), 201
+            
+            # Registrar automáticamente una donación inicial en el centro seleccionado
+            print(f"Registrando donación inicial en centro {data['id_centro']}...")
+            
+            # Obtener usuario actual para la donación
+            from flask_jwt_extended import get_jwt
+            claims = get_jwt()
+            id_usuario = claims.get('id_usuario', 1)
+            
+            # Variable para capturar el ID de la donación
+            id_donacion_out = cursor.var(oracledb.NUMBER)
+            
+            # Registrar donación inicial con volumen 0 (solo registro)
+            cursor.callproc("pkg_donacion.registrar_donacion", [
+                data['id_donante'],
+                data['id_centro'],
+                data['fecha_nacimiento'],  # Usar fecha de nacimiento como fecha de registro
+                0,  # Volumen 0 (solo registro inicial)
+                'Registrado',  # Estado inicial
+                id_usuario,
+                id_donacion_out
+            ])
+            
+            conn.commit()
+            nuevo_id_donacion = int(id_donacion_out.getvalue())
+            
+            print(f"✅ Donante registrado correctamente con donación inicial ID: {nuevo_id_donacion}")
+            return jsonify({
+                'mensaje': 'Donante registrado correctamente en el centro seleccionado',
+                'id_donacion_inicial': nuevo_id_donacion
+            }), 201
             
         except Exception as e:
             if conn:
