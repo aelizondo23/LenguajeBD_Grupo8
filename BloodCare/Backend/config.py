@@ -6,11 +6,11 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = 7 * 24 * 60 * 60  # 7 días
     
     # Base de datos Oracle
-    DB_HOST = "172.20.10.4"
+    DB_HOST = "192.168.0.15" 
     DB_PORT = 1521
-    DB_SERVICE = "orclpdb"
-    DB_USER = "bloodcare"
-    DB_PASSWORD = "123"
+    DB_SERVICE = "orclpdb" 
+    DB_USER = "bloodcare" 
+    DB_PASSWORD = "123" 
     
     # Flask
     DEBUG = True

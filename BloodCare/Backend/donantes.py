@@ -14,7 +14,7 @@ def validate_donante_data(data):
     errors = []
     
     # Campos requeridos
-    required_fields = ['nombre', 'apellido', 'fecha_nacimiento', 'sexo', 'id_tipo_sangre', 'id_centro']
+    required_fields = ['nombre', 'apellido', 'fecha_nacimiento', 'sexo', 'id_tipo_sangre']
     for field in required_fields:
         if not data.get(field):
             errors.append(f"Campo {field} es requerido")
@@ -27,29 +27,27 @@ def validate_donante_data(data):
         data['id_donante'] = str(cedula).strip()
         print(f"ID Donante: {data['id_donante']}")
     
-    # Validar fecha - ACEPTA MÚLTIPLES FORMATOS
     if data.get('fecha_nacimiento'):
         try:
             fecha_str = str(data['fecha_nacimiento']).strip()
             print(f"Fecha recibida: {fecha_str}")
             
-            if '/' in fecha_str:  # DD/MM/YYYY
+            if '/' in fecha_str: 
                 parts = fecha_str.split('/')
                 if len(parts) == 3:
                     day, month, year = parts
                     fecha_obj = datetime(int(year), int(month), int(day))
                     print(f"Fecha convertida desde DD/MM/YYYY: {fecha_obj}")
-            elif '-' in fecha_str and len(fecha_str.split('-')[0]) <= 2:  # DD-MM-YYYY
+            elif '-' in fecha_str and len(fecha_str.split('-')[0]) <= 2: 
                 parts = fecha_str.split('-')
                 if len(parts) == 3:
                     day, month, year = parts
                     fecha_obj = datetime(int(year), int(month), int(day))
                     print(f"Fecha convertida desde DD-MM-YYYY: {fecha_obj}")
-            else:  # YYYY-MM-DD
+            else: 
                 fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
                 print(f"Fecha en formato YYYY-MM-DD: {fecha_obj}")
             
-            # Convertir a DATE de Oracle
             data['fecha_nacimiento'] = fecha_obj
             print(f"Fecha final: {data['fecha_nacimiento']}")
             
@@ -90,7 +88,7 @@ def validate_donante_data(data):
     data['correo'] = data.get('correo', '') or ''
     
     # Validar centro de donación (ahora opcional, se usa el configurado)
-    if data.get('id_centro'):
+    """ if data.get('id_centro'):
         try:
             centro = int(data['id_centro'])
             if centro < 1 or centro > 3:
@@ -102,7 +100,7 @@ def validate_donante_data(data):
     else:
         # Si no se especifica centro, usar el por defecto (1)
         data['id_centro'] = 1
-        print(f"Centro de donación por defecto: {data['id_centro']}")
+        print(f"Centro de donación por defecto: {data['id_centro']}") """
     
     if errors:
         print(f"❌ Errores de validación: {errors}")
@@ -111,6 +109,7 @@ def validate_donante_data(data):
     
     return data, errors
 
+
 @donantes_bp.route('/registrar', methods=['POST'])
 @jwt_required()
 def registrar_donante():
@@ -118,7 +117,7 @@ def registrar_donante():
     print("👤 Solicitud de registro de donante recibida")
     
     try:
-        # Verificar permisos según tu SQL
+        # Verificar permisos
         usuario = get_jwt_identity()
         
         # Obtener claims adicionales
@@ -132,7 +131,7 @@ def registrar_donante():
         print(f"Usuario ID: {usuario}")
         print(f"Usuario: {nombre_usuario} - Rol: {rol}")
         
-        # Roles que pueden registrar donantes según tu estructura
+        # Roles que pueden registrar donantes
         roles_permitidos = ['Administrador', 'Diplomado', 'Tecnico', 'Microbiologo', 'Jefatura']
         
         if rol not in roles_permitidos:
@@ -149,7 +148,6 @@ def registrar_donante():
                 'detalles': errors
             }), 400
         
-        # Verificar si el donante ya existe usando la función del paquete
         print("Verificando si el donante ya existe...")
         try:
             existe = execute_function(
@@ -163,7 +161,6 @@ def registrar_donante():
         except Exception as e:
             print(f"⚠️ No se pudo verificar existencia: {e}")
         
-        # Registrar donante usando el paquete PAQ_DONANTE
         print("Registrando donante usando PAQ_DONANTE.REGISTRAR_DONANTE...")
         
         conn = cursor = None
@@ -171,7 +168,6 @@ def registrar_donante():
             conn = get_connection()
             cursor = conn.cursor()
             
-            # Llamar al procedimiento del paquete
             cursor.callproc("PAQ_DONANTE.REGISTRAR_DONANTE", [
                 data['id_donante'],
                 data['nombre'],
@@ -186,35 +182,10 @@ def registrar_donante():
             
             conn.commit()
             
-            # Registrar automáticamente una donación inicial en el centro seleccionado
-            print(f"Registrando donación inicial en centro {data['id_centro']}...")
-            
-            # Obtener usuario actual para la donación
-            from flask_jwt_extended import get_jwt
-            claims = get_jwt()
-            id_usuario = claims.get('id_usuario', 1)
-            
-            # Variable para capturar el ID de la donación
-            id_donacion_out = cursor.var(oracledb.NUMBER)
-            
-            # Registrar donación inicial con volumen 0 (solo registro)
-            cursor.callproc("pkg_donacion.registrar_donacion", [
-                data['id_donante'],
-                data['id_centro'],
-                data['fecha_nacimiento'],  # Usar fecha de nacimiento como fecha de registro
-                0,  # Volumen 0 (solo registro inicial)
-                'Registrado',  # Estado inicial
-                id_usuario,
-                id_donacion_out
-            ])
-            
-            conn.commit()
-            nuevo_id_donacion = int(id_donacion_out.getvalue())
-            
-            print(f"✅ Donante registrado correctamente con donación inicial ID: {nuevo_id_donacion}")
+            print(f"✅ Donante registrado correctamente: {data['nombre']} {data['apellido']}")
             return jsonify({
-                'mensaje': 'Donante registrado correctamente en el centro seleccionado',
-                'id_donacion_inicial': nuevo_id_donacion
+                'mensaje': 'Donante registrado correctamente',
+                'id_donante': data['id_donante']
             }), 201
             
         except Exception as e:
@@ -242,7 +213,6 @@ def obtener_donante(id_donante):
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Usar el procedimiento del paquete que retorna cursor
         out_cursor = cursor.var(oracledb.CURSOR)
         cursor.callproc("PAQ_DONANTE.OBTENER_DONANTE", [id_donante, out_cursor])
         
@@ -263,7 +233,7 @@ def obtener_donante(id_donante):
             'telefono': row[6],
             'correo': row[7],
             'id_tipo_sangre': row[8],
-            'tipo_sangre': row[9] if len(row) > 9 else None  # Incluye el tipo de sangre del JOIN
+            'tipo_sangre': row[9] if len(row) > 9 else None 
         }
         
         print(f"✅ Donante encontrado: {donante['nombre']} {donante['apellido']}")
@@ -289,7 +259,6 @@ def listar_donantes():
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Usar el procedimiento del paquete que retorna cursor
         out_cursor = cursor.var(oracledb.CURSOR)
         cursor.callproc("PAQ_DONANTE.LISTAR_DONANTES", [out_cursor])
         
@@ -330,16 +299,28 @@ def actualizar_donante(id_donante):
     
     try:
         # Verificar permisos
-        usuario = get_jwt_identity()
-        rol = usuario.get('rol', '')
+        usuario = get_jwt_identity()  
+        
+        # Obtener claims adicionales del JWT
+        from flask_jwt_extended import get_jwt
+        claims = get_jwt()
+        
+        rol = claims.get('rol', '')
+        nombre_usuario = claims.get('nombre_usuario', '')
+        id_usuario = claims.get('id_usuario', usuario)
+        
+        print(f"Usuario ID: {usuario}")
+        print(f"Usuario: {nombre_usuario} - Rol: {rol}")
+        
         roles_permitidos = ['Administrador', 'Diplomado', 'Microbiologo', 'Jefatura']
         
         if rol not in roles_permitidos:
+            print(f"❌ Acceso denegado para rol: {rol}")
             return jsonify({'error': 'Acceso denegado'}), 403
         
         # Obtener y validar datos
         data = request.get_json() or {}
-        data['id_donante'] = id_donante  # Asegurar que el ID coincida
+        data['id_donante'] = id_donante
         data, errors = validate_donante_data(data)
         
         if errors:
@@ -348,7 +329,6 @@ def actualizar_donante(id_donante):
                 'detalles': errors
             }), 400
         
-        # Actualizar donante usando el paquete
         conn = cursor = None
         try:
             conn = get_connection()
@@ -382,7 +362,7 @@ def actualizar_donante(id_donante):
         
     except Exception as e:
         print(f"❌ Error actualizando donante: {e}")
-        return jsonify({'error': f'Error interno: {str(e)}'}), 500
+        return jsonify({'error': f'Error interno: {str(e)}'})
 
 @donantes_bp.route('/<id_donante>', methods=['DELETE'])
 @jwt_required()
@@ -391,15 +371,24 @@ def eliminar_donante(id_donante):
     print(f"🗑️ Eliminando donante: {id_donante}")
     
     try:
-        # Verificar permisos - solo roles altos
         usuario = get_jwt_identity()
-        rol = usuario.get('rol', '')
+        
+        from flask_jwt_extended import get_jwt
+        claims = get_jwt()
+        
+        rol = claims.get('rol', '')
+        nombre_usuario = claims.get('nombre_usuario', '')
+        id_usuario = claims.get('id_usuario', usuario)
+        
+        print(f"Usuario ID: {usuario}")
+        print(f"Usuario: {nombre_usuario} - Rol: {rol}")
+        
         roles_permitidos = ['Administrador', 'Jefatura']
         
         if rol not in roles_permitidos:
+            print(f"❌ Acceso denegado para rol: {rol}")
             return jsonify({'error': 'Acceso denegado'}), 403
         
-        # Eliminar donante usando el paquete
         conn = cursor = None
         try:
             conn = get_connection()
@@ -408,7 +397,7 @@ def eliminar_donante(id_donante):
             cursor.callproc("PAQ_DONANTE.ELIMINAR_DONANTE", [id_donante])
             
             conn.commit()
-            print("✅ Donante eliminado correctamente")
+            print(f"✅ Donante {id_donante} eliminado correctamente por {nombre_usuario}")
             return jsonify({'mensaje': 'Donante eliminado correctamente'}), 200
             
         except Exception as e:

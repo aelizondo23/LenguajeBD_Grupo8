@@ -5,13 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <title>Registrar Donante - BloodCare</title>
+  <title>Gestión de Donantes - BloodCare</title>
   <style>
-    .alert {
-      margin-top: 20px;
-    }
-
     .navbar-brand {
       font-weight: bold;
       font-size: 1.5rem;
@@ -25,15 +22,128 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      background-color: #f8f9fa;
     }
 
     main {
       flex: 1;
     }
+
+    .card {
+      border: none;
+      box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+      transition: box-shadow 0.15s ease-in-out;
+    }
+
+    .card:hover {
+      box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-action {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+      margin: 0 0.125rem;
+    }
+
+    .table th {
+      background-color: #fff;
+      border-top: none;
+      font-weight: 600;
+      color: #495057;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .table td {
+      vertical-align: middle;
+      border-top: 1px solid #eee;
+    }
+
+    .search-container {
+      position: relative;
+    }
+
+    .search-container i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6c757d;
+    }
+
+    .search-container input {
+      padding-left: 40px;
+    }
+
+    .badge-type {
+      font-size: 0.75rem;
+      padding: 0.375rem 0.75rem;
+    }
+
+    .loading-spinner {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6c757d;
+    }
+
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      color: #dee2e6;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid #dee2e6;
+      background-color: #fff;
+    }
+
+    .modal-footer {
+      border-top: 1px solid #dee2e6;
+      background-color: #f8f9fa;
+    }
+
+    .form-label {
+      font-weight: 500;
+      color: #495057;
+      margin-bottom: 0.5rem;
+    }
+
+    .required::after {
+      content: " *";
+      color: #dc3545;
+    }
+
+    .stats-card {
+      background: #dc3545;
+      color: white;
+      border: none;
+    }
+
+    .stats-card .card-body {
+      padding: 1.5rem;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .stats-label {
+      font-size: 0.875rem;
+      opacity: 0.9;
+      margin: 0;
+    }
   </style>
 </head>
 
-<body class="bg-light">
+<body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
     <div class="container">
       <a class="navbar-brand" href="#">BLOODCARE</a>
@@ -44,12 +154,13 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
-          <li class="nav-item"><a class="nav-link active" href="registro_donante.html">Registrar Donante</a></li>
+          <li class="nav-item"><a class="nav-link active" href="registro_donante.html">Gestión de Donantes</a></li>
           <li class="nav-item"><a class="nav-link" href="registro_donacion.html">Registrar Donación</a></li>
           <li class="nav-item"><a class="nav-link" href="registro_rechazo.html">Registrar Rechazo</a></li>
           <li class="nav-item"><a class="nav-link" href="inventario.html">Inventario</a></li>
           <li class="nav-item"><a class="nav-link" href="estadisticas.html">Estadísticas</a></li>
           <li class="nav-item"><a class="nav-link" href="bitacora.html">Bitácora</a></li>
+          <li class="nav-item"><a id="nav-admin" class="nav-link d-none" href="admin_panel.html">Panel Admin</a></li>
           <li class="nav-item"><a id="nav-login" class="nav-link" href="login.html">Login</a></li>
           <li class="nav-item"><a id="nav-logout" class="nav-link d-none" href="#" onclick="logout()">Cerrar Sesión</a>
           </li>
@@ -59,109 +170,224 @@
   </nav>
 
   <main>
-    <div class="container mt-5">
-      <h2 class="mb-4 text-center">Registrar Donante</h2>
-
+    <div class="container-fluid py-4">
       <!-- Alert para mostrar mensajes -->
       <div id="alert-container"></div>
 
-      <form id="form-donante" class="card p-4 shadow-sm bg-white">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Nombre *</label>
-            <input type="text" name="nombre" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Apellido *</label>
-            <input type="text" name="apellido" class="form-control" required>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label">Cédula *</label>
-          <input type="text" name="cedula" class="form-control" required>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Fecha de Nacimiento *</label>
-            <input type="date" name="fecha_nacimiento" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Sexo *</label>
-            <select name="sexo" class="form-select" required>
-              <option value="">Seleccione</option>
-              <option value="F">Femenino</option>
-              <option value="M">Masculino</option>
-            </select>
+      <!-- Header y estadísticas -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>Gestión de Donantes</h2>
+            <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#donanteModal" onclick="abrirModalNuevo()">
+              <i class="bi bi-person-plus me-2"></i>Nuevo Donante
+            </button>
           </div>
         </div>
+      </div>
 
-        <div class="mb-3">
-          <label class="form-label">Dirección</label>
-          <input type="text" name="direccion" class="form-control">
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Teléfono</label>
-            <input type="tel" name="telefono" class="form-control">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Correo Electrónico</label>
-            <input type="email" name="correo" class="form-control">
+      <!-- Estadística rápida -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card stats-card">
+            <div class="card-body text-center">
+              <h3 class="stats-number" id="total-donantes">0</h3>
+              <p class="stats-label">Total Donantes</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="mb-3">
-          <label class="form-label">Tipo de Sangre *</label>
-          <select name="tipo_sangre" class="form-select" required>
-            <option value="">Seleccione</option>
-            <option value="1">A+</option>
-            <option value="2">A-</option>
-            <option value="3">B+</option>
-            <option value="4">B-</option>
-            <option value="5">O+</option>
-            <option value="6">O-</option>
-            <option value="7">AB+</option>
-            <option value="8">AB-</option>
-          </select>
+      <!-- Filtros y búsqueda -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="search-container">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, apellido o cédula...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" id="filterTipoSangre">
+                <option value="">Todos los tipos de sangre</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" id="filterSexo">
+                <option value="">Ambos sexos</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div class="mb-3">
-          <label class="form-label">Centro de Donación *</label>
-          <select name="id_centro" class="form-select" required>
-            <option value="">Seleccione el centro</option>
-            <option value="1">Hospital San Vicente de Paul</option>
-            <option value="2">Hospital Nacional de Niños</option>
-            <option value="3">Hospital México</option>
-          </select>
-        </div>
+      <!-- Tabla de donantes -->
+      <div class="card">
+        <div class="card-body">
+          <!-- Loading spinner -->
+          <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-danger" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
 
-        <div class="d-grid">
-          <button type="submit" class="btn btn-danger btn-lg">
-            <span id="btn-text">Registrar Donante</span>
-            <span id="btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-              Registrando...
-            </span>
-          </button>
+          <!-- Tabla -->
+          <div class="table-responsive" id="tableContainer">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre Completo</th>
+                  <th>Tipo de Sangre</th>
+                  <th>Sexo</th>
+                  <th>Fecha Nacimiento</th>
+                  <th>Teléfono</th>
+                  <th>Correo</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="donantesTbody">
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Estado vacío -->
+          <div class="empty-state d-none" id="emptyState">
+            <i class="bi bi-people"></i>
+            <h5>No hay donantes registrados</h5>
+            <p>Comienza agregando tu primer donante al sistema</p>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#donanteModal" onclick="abrirModalNuevo()">
+              <i class="bi bi-person-plus me-2"></i>Agregar Donante
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   </main>
 
-  <footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
-    © 2025 BLOODCARE. Todos los derechos reservados.
+  <!-- Modal para registrar/editar donante -->
+  <div class="modal fade" id="donanteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">
+            <i class="bi bi-person-plus me-2"></i>Nuevo Donante
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="form-donante">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label required">Nombre</label>
+                <input type="text" name="nombre" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required">Apellido</label>
+                <input type="text" name="apellido" class="form-control" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label required">Cédula</label>
+                <input type="text" name="cedula" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required">Fecha de Nacimiento</label>
+                <input type="date" name="fecha_nacimiento" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required">Sexo</label>
+                <select name="sexo" class="form-select" required>
+                  <option value="">Seleccione</option>
+                  <option value="F">Femenino</option>
+                  <option value="M">Masculino</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Dirección</label>
+                <input type="text" name="direccion" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" name="telefono" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" name="correo" class="form-control">
+              </div>
+              <div class="col-12">
+                <label class="form-label required">Tipo de Sangre</label>
+                <select name="id_tipo_sangre" class="form-select" required id="tipoSangreSelect">
+                  <option value="">Seleccione</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger" id="btnSubmit">
+              <span id="btn-text">
+                <i class="bi bi-check-lg me-2"></i>Guardar Donante
+              </span>
+              <span id="btn-loading" class="d-none">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Guardando...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación de eliminación -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Está seguro de que desea eliminar el donante <strong id="deleteDonanteNombre"></strong>?</p>
+          <p class="text-muted small">Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="bi bi-trash3 me-2"></i>Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-danger text-white text-center py-3 mt-5">
+    <div class="container">
+      <p class="mb-0 fw-bold fs-5">© 2025 BLOODCARE. Todos los derechos reservados.</p>
+    </div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="js/centro_config.js"></script>
-
   <script>
-    // Verificar autenticación al cargar la página
+    // Variables globales
+    let donantes = [];
+    let tiposSangre = [];
+    let editingId = null;
+    const API_BASE = 'http://localhost:5000/api';
+
+    // Inicialización
     document.addEventListener('DOMContentLoaded', function () {
       checkAuth();
+      if (checkAuth()) {
+        cargarTiposSangre();
+        cargarDonantes();
+        setupEventListeners();
+      }
     });
 
     function checkAuth() {
@@ -173,7 +399,6 @@
         showAlert('No hay sesión activa. Por favor, inicie sesión.', 'warning');
         navLogin.classList.remove('d-none');
         navLogout.classList.add('d-none');
-        // Opcional: redirigir al login después de 3 segundos
         setTimeout(() => {
           window.location.href = 'login.html';
         }, 3000);
@@ -194,6 +419,432 @@
       }, 1000);
     }
 
+    // Cargar tipos de sangre
+    function cargarTiposSangre() {
+      const token = localStorage.getItem('token');
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `${API_BASE}/tipo_sangre/listar`, true); 
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              console.log(data);
+              tiposSangre = data || []; 
+              
+              // Llenar selects
+              const selects = ['tipoSangreSelect', 'filterTipoSangre'];
+              selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (selectId === 'filterTipoSangre') {
+                  select.innerHTML = '<option value="">Todos los tipos de sangre</option>';
+                } else {
+                  select.innerHTML = '<option value="">Seleccione</option>';
+                }
+                
+                tiposSangre.forEach(tipo => {
+                  const option = document.createElement('option');
+                  option.value = tipo.id_tipo_sangre;
+                  option.textContent = tipo.tipo;
+                  select.appendChild(option);
+                });
+              });
+            } catch (error) {
+              console.error('Error parseando tipos de sangre:', error);
+            }
+          } else {
+            console.error('Error cargando tipos de sangre:', xhr.status);
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        console.error('Error de conexión cargando tipos de sangre');
+      };
+      
+      xhr.send();
+    }
+
+
+
+    // Cargar donantes
+    function cargarDonantes() {
+      showLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `${API_BASE}/donantes/listar`, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          showLoading(false);
+          
+          if (xhr.status === 200) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              donantes = data.donantes || data || [];
+              renderDonantes();
+              updateStats();
+            } catch (error) {
+              console.error('Error parseando donantes:', error);
+              showAlert('Error al procesar los datos de donantes', 'error');
+              donantes = [];
+              renderDonantes();
+            }
+          } else if (xhr.status === 401) {
+            showAlert('Sesión expirada. Redirigiendo al login...', 'warning');
+            localStorage.removeItem('token');
+            setTimeout(() => window.location.href = 'login.html', 2000);
+          } else {
+            showAlert(`Error al cargar los donantes: ${xhr.status} ${xhr.statusText}`, 'error');
+            donantes = [];
+            renderDonantes();
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        showLoading(false);
+        showAlert('Error de conexión al cargar donantes', 'error');
+        donantes = [];
+        renderDonantes();
+      };
+      
+      xhr.send();
+    }
+
+    // Renderizar tabla de donantes
+    function renderDonantes(donantesFiltrados = null) {
+      const tbody = document.getElementById('donantesTbody');
+      const tableContainer = document.getElementById('tableContainer');
+      const emptyState = document.getElementById('emptyState');
+      
+      const lista = donantesFiltrados || donantes;
+
+      if (lista.length === 0) {
+        tableContainer.classList.add('d-none');
+        emptyState.classList.remove('d-none');
+        return;
+      }
+
+      tableContainer.classList.remove('d-none');
+      emptyState.classList.add('d-none');
+
+      tbody.innerHTML = lista.map(donante => {
+        const tipoSangre = tiposSangre.find(t => (t.id_tipo_sangre || t.id) == donante.id_tipo_sangre);
+        const fechaNac = donante.fecha_nacimiento ? new Date(donante.fecha_nacimiento).toLocaleDateString() : 'N/A';
+        
+        return `
+          <tr>
+            <td><strong>${donante.id_donante}</strong></td>
+            <td>${donante.nombre} ${donante.apellido}</td>
+            <td><span class="badge badge-type bg-danger">${tipoSangre ? tipoSangre.tipo : 'N/A'}</span></td>
+            <td><i class="bi bi-${donante.sexo === 'M' ? 'person' : 'person-dress'} me-1"></i>${donante.sexo === 'M' ? 'Masculino' : 'Femenino'}</td>
+            <td>${fechaNac}</td>
+            <td>${donante.telefono || 'N/A'}</td>
+            <td>${donante.correo || 'N/A'}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-primary btn-action" onclick="editarDonante('${donante.id_donante}')" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger btn-action" onclick="confirmarEliminar('${donante.id_donante}', '${donante.nombre} ${donante.apellido}')" title="Eliminar">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Configurar event listeners
+    function setupEventListeners() {
+      // Búsqueda y filtros
+      document.getElementById('searchInput').addEventListener('input', filtrarDonantes);
+      document.getElementById('filterTipoSangre').addEventListener('change', filtrarDonantes);
+      document.getElementById('filterSexo').addEventListener('change', filtrarDonantes);
+
+      // Formulario
+      document.getElementById('form-donante').addEventListener('submit', handleSubmit);
+    }
+
+    // Filtrar donantes
+    function filtrarDonantes() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const tipoSangre = document.getElementById('filterTipoSangre').value;
+      const sexo = document.getElementById('filterSexo').value;
+
+      const filtered = donantes.filter(donante => {
+        const matchSearch = !search || 
+          donante.nombre.toLowerCase().includes(search) ||
+          donante.apellido.toLowerCase().includes(search) ||
+          donante.id_donante.toLowerCase().includes(search);
+        
+        const matchTipo = !tipoSangre || donante.id_tipo_sangre == tipoSangre;
+        const matchSexo = !sexo || donante.sexo === sexo;
+
+        return matchSearch && matchTipo && matchSexo;
+      });
+
+      renderDonantes(filtered);
+    }
+
+    // Abrir modal para nuevo donante
+    function abrirModalNuevo() {
+      editingId = null;
+      document.getElementById('modalTitle').innerHTML = '<i class="bi bi-person-plus me-2"></i>Nuevo Donante';
+      document.getElementById('btn-text').innerHTML = '<i class="bi bi-check-lg me-2"></i>Guardar Donante';
+      document.getElementById('form-donante').reset();
+      // Habilitar campo cédula
+      document.querySelector('input[name="cedula"]').readOnly = false;
+    }
+
+    // Editar donante
+    function editarDonante(id) {
+      // Prevenir múltiples clics
+      const editButtons = document.querySelectorAll('.btn-outline-primary');
+      editButtons.forEach(btn => btn.disabled = true);
+      
+      const token = localStorage.getItem('token');
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `${API_BASE}/donantes/${id}`, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      xhr.onreadystatechange = function() {
+        // Rehabilitar botones
+        editButtons.forEach(btn => btn.disabled = false);
+        
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            try {
+              const donante = JSON.parse(xhr.responseText);
+              
+              editingId = id;
+              document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Donante';
+              document.getElementById('btn-text').innerHTML = '<i class="bi bi-check-lg me-2"></i>Actualizar Donante';
+              
+              function convertirFecha(fechaStr) {
+                if (!fechaStr) return '';
+                
+                try {
+                  if (fechaStr.includes(' ')) {
+                    return fechaStr.split(' ')[0]; 
+                  }
+                  
+                  if (fechaStr.includes('T')) {
+                    return fechaStr.split('T')[0];
+                  }
+                  
+                  return fechaStr;
+                } catch (error) {
+                  console.error('Error convertiendo fecha:', error);
+                  return '';
+                }
+              }
+              
+              // Llenar formulario
+              const form = document.getElementById('form-donante');
+              form.nombre.value = donante.nombre || '';
+              form.apellido.value = donante.apellido || '';
+              form.cedula.value = donante.cedula || donante.id_donante || '';
+              form.fecha_nacimiento.value = convertirFecha(donante.fecha_nacimiento);
+              form.sexo.value = donante.sexo || '';
+              form.direccion.value = donante.direccion || '';
+              form.telefono.value = donante.telefono || '';
+              form.correo.value = donante.correo || '';
+              form.id_tipo_sangre.value = donante.id_tipo_sangre || '';
+              
+              console.log('Fecha original:', donante.fecha_nacimiento);
+              console.log('Fecha convertida:', convertirFecha(donante.fecha_nacimiento));
+              
+              // Deshabilitar campo cédula en edición
+              document.querySelector('input[name="cedula"]').readOnly = true;
+              
+              // Mostrar modal
+              const modal = new bootstrap.Modal(document.getElementById('donanteModal'));
+              modal.show();
+            } catch (error) {
+              console.error('Error parseando donante:', error);
+              showAlert('Error al procesar los datos del donante', 'error');
+            }
+          } else {
+            showAlert('Error al cargar los datos del donante', 'error');
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        editButtons.forEach(btn => btn.disabled = false);
+        showAlert('Error de conexión al cargar el donante', 'error');
+      };
+      
+      xhr.send();
+    }
+
+    // Confirmar eliminación
+    function confirmarEliminar(id, nombre) {
+      document.getElementById('deleteDonanteNombre').textContent = nombre;
+      document.getElementById('confirmDeleteBtn').onclick = () => eliminarDonante(id);
+      
+      const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+      modal.show();
+    }
+
+    // Eliminar donante
+    function eliminarDonante(id) {
+      // Prevenir múltiples clics
+      const deleteBtn = document.getElementById('confirmDeleteBtn');
+      deleteBtn.disabled = true;
+      deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
+      
+      const token = localStorage.getItem('token');
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('DELETE', `${API_BASE}/donantes/${id}`, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          // Rehabilitar botón
+          deleteBtn.disabled = false;
+          deleteBtn.innerHTML = '<i class="bi bi-trash3 me-2"></i>Eliminar';
+          
+          if (xhr.status === 200 || xhr.status === 204) {
+            showAlert('Donante eliminado exitosamente', 'success');
+            
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+            
+            // Recargar lista
+            cargarDonantes();
+          } else {
+            showAlert('Error al eliminar el donante', 'error');
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = '<i class="bi bi-trash3 me-2"></i>Eliminar';
+        showAlert('Error de conexión al eliminar el donante', 'error');
+      };
+      
+      xhr.send();
+    }
+
+    // Manejar envío del formulario
+    function handleSubmit(e) {
+      e.preventDefault();
+
+      if (!checkAuth()) return;
+
+      // Prevenir envío múltiple
+      const submitBtn = document.getElementById('btnSubmit');
+      if (submitBtn.disabled) return;
+
+      const token = localStorage.getItem('token');
+      setLoading(true);
+
+      const formData = new FormData(e.target);
+      const data = {};
+
+      for (let [key, value] of formData.entries()) {
+        data[key] = value.trim();
+      }
+
+      // Validaciones
+      if (!data.nombre || !data.apellido || !data.cedula) {
+        showAlert('Por favor complete todos los campos requeridos (*)', 'error');
+        setLoading(false);
+        return;
+      }
+
+      if (!data.sexo || (data.sexo !== 'M' && data.sexo !== 'F')) {
+        showAlert('Por favor seleccione un sexo válido', 'error');
+        setLoading(false);
+        return;
+      }
+
+      if (!data.id_tipo_sangre) {
+        showAlert('Por favor seleccione un tipo de sangre', 'error');
+        setLoading(false);
+        return;
+      }
+
+      // Preparar datos
+      const donanteData = {
+        id_donante: data.cedula,
+        nombre: data.nombre,
+        apellido: data.apellido,
+        direccion: data.direccion || '',
+        fecha_nacimiento: data.fecha_nacimiento,
+        sexo: data.sexo,
+        telefono: data.telefono || '',
+        correo: data.correo || '',
+        id_tipo_sangre: parseInt(data.id_tipo_sangre)
+      };
+
+      // Determinar método y URL
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId ? `${API_BASE}/donantes/${editingId}` : `${API_BASE}/donantes/registrar`;
+
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          setLoading(false);
+          
+          if (xhr.status === 200 || xhr.status === 201) {
+            const mensaje = editingId ? 'Donante actualizado exitosamente!' : '¡Donante registrado exitosamente!';
+            showAlert(mensaje, 'success');
+            
+            // Cerrar modal y recargar lista
+            const modal = bootstrap.Modal.getInstance(document.getElementById('donanteModal'));
+            modal.hide();
+            cargarDonantes();
+          } else {
+            let errorMessage = editingId ? 'Error al actualizar donante' : 'Error al registrar donante';
+
+            if (xhr.status === 401) {
+              errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+              localStorage.removeItem('token');
+              setTimeout(() => window.location.href = 'login.html', 2000);
+            } else if (xhr.status === 403) {
+              errorMessage = 'No tiene permisos para esta operación';
+            } else if (xhr.status === 409) {
+              errorMessage = 'El donante ya existe en el sistema';
+            } else {
+              try {
+                const result = JSON.parse(xhr.responseText);
+                if (result.error) {
+                  errorMessage = result.error;
+                }
+              } catch (e) {
+              }
+            }
+
+            showAlert(errorMessage, 'error');
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        setLoading(false);
+        showAlert('Error de conexión con el servidor', 'error');
+      };
+      
+      xhr.send(JSON.stringify(donanteData));
+    }
+
+    // Utilidades
     function showAlert(message, type) {
       const alertContainer = document.getElementById('alert-container');
       const alertClass = type === 'success' ? 'alert-success' :
@@ -202,6 +853,7 @@
 
       alertContainer.innerHTML = `
         <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+          <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
           ${message}
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -219,7 +871,7 @@
     function setLoading(loading) {
       const btnText = document.getElementById('btn-text');
       const btnLoading = document.getElementById('btn-loading');
-      const submitBtn = document.querySelector('button[type="submit"]');
+      const submitBtn = document.getElementById('btnSubmit');
 
       if (loading) {
         btnText.classList.add('d-none');
@@ -232,101 +884,23 @@
       }
     }
 
-    // Manejar el envío del formulario
-    document.getElementById('form-donante').addEventListener('submit', async function (e) {
-      e.preventDefault();
+    function showLoading(show) {
+      const spinner = document.getElementById('loadingSpinner');
+      const tableContainer = document.getElementById('tableContainer');
+      const emptyState = document.getElementById('emptyState');
 
-      // Verificar autenticación antes de enviar
-      if (!checkAuth()) {
-        return;
+      if (show) {
+        spinner.style.display = 'flex';
+        tableContainer.classList.add('d-none');
+        emptyState.classList.add('d-none');
+      } else {
+        spinner.style.display = 'none';
       }
+    }
 
-      const token = localStorage.getItem('token');
-      setLoading(true);
-
-      try {
-        const formData = new FormData(this);
-        const data = {};
-
-        // Convertir FormData a objeto
-        for (let [key, value] of formData.entries()) {
-          data[key] = value.trim();
-        }
-
-        // Validaciones del frontend
-        if (!data.nombre || !data.apellido || !data.cedula) {
-          throw new Error('Por favor complete todos los campos requeridos (*)');
-        }
-
-        if (!data.sexo || (data.sexo !== 'M' && data.sexo !== 'F')) {
-          throw new Error('Por favor seleccione un sexo válido');
-        }
-
-        if (!data.tipo_sangre || data.tipo_sangre === '') {
-          throw new Error('Por favor seleccione un tipo de sangre');
-        }
-
-        // Preparar datos para el backend
-        const donanteData = {
-          id_donante: data.cedula,
-          cedula: data.cedula,
-          nombre: data.nombre,
-          apellido: data.apellido,
-          direccion: data.direccion || '',
-          fecha_nacimiento: data.fecha_nacimiento, // Ya está en formato YYYY-MM-DD
-          sexo: data.sexo,
-          telefono: data.telefono || '',
-          correo: data.correo || '',
-          id_tipo_sangre: parseInt(data.tipo_sangre), // Convertir a número
-          id_centro: parseInt(data.id_centro) // Agregar centro de donación
-        };
-
-        console.log('Datos a enviar:', donanteData);
-
-        const response = await fetch('http://localhost:5000/api/donantes/registrar', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(donanteData)
-        });
-
-        const result = await response.json();
-        console.log('Respuesta del servidor:', result);
-
-        if (response.ok) {
-          showAlert('¡Donante registrado exitosamente!', 'success');
-          this.reset(); // Limpiar formulario
-        } else {
-          // Manejar diferentes tipos de error
-          let errorMessage = 'Error al registrar donante';
-
-          if (response.status === 401) {
-            errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
-            localStorage.removeItem('token');
-            setTimeout(() => window.location.href = 'login.html', 2000);
-          } else if (response.status === 403) {
-            errorMessage = 'No tiene permisos para registrar donantes';
-          } else if (response.status === 409) {
-            errorMessage = 'El donante ya existe en el sistema';
-          } else if (result.error) {
-            errorMessage = result.error;
-            if (result.detalles && Array.isArray(result.detalles)) {
-              errorMessage += ': ' + result.detalles.join(', ');
-            }
-          }
-
-          showAlert(errorMessage, 'error');
-        }
-
-      } catch (error) {
-        console.error('Error:', error);
-        showAlert(error.message || 'Error de conexión con el servidor', 'error');
-      } finally {
-        setLoading(false);
-      }
-    });
+    function updateStats() {
+      document.getElementById('total-donantes').textContent = donantes.length;
+    }
   </script>
 </body>
 

@@ -19,6 +19,44 @@ def require_admin():
     print("✅ Usuario es administrador")
     return None
 
+@admin_bp.route('/roles', methods=['GET'])
+@jwt_required()
+def listar_roles():
+    """Lista todos los roles del sistema"""
+    error = require_admin()
+    if error:
+        return error
+
+    try:
+        conn = cursor = None
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id_rol, nombre_rol, descripcion FROM rol")
+        data = cursor.fetchall()
+
+        roles = []
+        for row in data:
+            roles.append({
+                'id_rol': row[0],
+                'nombre_rol': row[1],
+                'descripcion': row[2]
+            })
+
+        return jsonify(roles), 200
+
+    except Exception as e:
+        print(f"❌ Error listando roles: {e}")
+        return jsonify({'error': f'Error interno: {str(e)}'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+# ===== GESTIÓN DE USUARIOS =====
+
 # ===== GESTIÓN DE USUARIOS =====
 
 @admin_bp.route('/usuarios', methods=['GET'])
@@ -44,8 +82,11 @@ def listar_usuarios():
             usuarios.append({
                 'id_usuario': row[0],
                 'nombre_usuario': row[1],
-                'rol': row[2],
-                'estado': row[3]
+                'contrasena': row[2],
+                'correo': row[3],
+                'estado': row[4],
+                'id_rol': row[5],
+                'rol': row[6]
             })
         
         return jsonify(usuarios), 200
@@ -59,6 +100,50 @@ def listar_usuarios():
         if conn:
             conn.close()
 
+@admin_bp.route('/usuarios/<id_usuario>', methods=['GET'])
+@jwt_required()
+def obtener_usuario(id_usuario):
+    """Obtiene los datos completos de un usuario específico"""
+    error = require_admin()
+    if error:
+        return error
+    
+    try:
+        conn = cursor = None
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Usar el paquete PAQ_ADMIN para obtener usuario específico
+        out_cursor = cursor.var(oracledb.CURSOR)
+        cursor.callproc("PAQ_ADMIN.OBTENER_USUARIO", [id_usuario, out_cursor])
+        
+        data = out_cursor.getvalue().fetchone()
+        
+        if not data:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        
+        usuario = {
+            'id_usuario': data[0],
+            'nombre_usuario': data[1],
+            'contrasena': data[2],
+            'correo': data[3],
+            'estado': data[4],
+            'id_rol': data[5],
+            'rol': data[6]
+        }
+        
+        return jsonify(usuario), 200
+        
+    except Exception as e:
+        print(f"❌ Error obteniendo usuario {id_usuario}: {e}")
+        return jsonify({'error': f'Error interno: {str(e)}'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @admin_bp.route('/usuarios', methods=['POST'])
 @jwt_required()
 def crear_usuario():
@@ -71,19 +156,22 @@ def crear_usuario():
         data = request.get_json() or {}
         print(f"🔍 Datos recibidos para crear usuario: {data}")
         
-        # Validar campos requeridos
-        required_fields = ['nombre_usuario', 'contrasena', 'id_rol']
+        # Validar campos requeridos (id_usuario no se pide, Oracle lo genera)
+        required_fields = ['nombre_usuario', 'correo', 'contrasena', 'id_rol', 'estado']
         for field in required_fields:
             if not data.get(field):
                 print(f"❌ Campo faltante: {field}")
                 return jsonify({'error': f'Campo {field} es requerido'}), 400
         
+        # Validar formato de correo
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, data['correo']):
+            return jsonify({'error': 'Formato de correo electrónico inválido'}), 400
+        
         # Validar y convertir id_rol
         try:
             id_rol = int(str(data['id_rol']).strip())
-            if id_rol < 1 or id_rol > 5:
-                print(f"❌ ID de rol inválido: {id_rol}")
-                return jsonify({'error': 'ID de rol debe estar entre 1 y 5'}), 400
         except (ValueError, TypeError):
             print(f"❌ ID de rol no es numérico: {data['id_rol']}")
             return jsonify({'error': 'ID de rol debe ser un número válido'}), 400
@@ -94,24 +182,28 @@ def crear_usuario():
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Usar el paquete PAQ_ADMIN
-        id_usuario_out = cursor.var(oracledb.NUMBER)
+        # Crear variable para capturar el OUT id_usuario
+        id_usuario_out = cursor.var(oracledb.STRING)
         
+        # Usar el paquete PAQ_ADMIN
         print(f"📤 Llamando procedimiento con parámetros:")
         print(f"   nombre_usuario: '{data['nombre_usuario']}'")
+        print(f"   correo: '{data['correo']}'")
         print(f"   contrasena: '{data['contrasena']}'")
         print(f"   id_rol: {id_rol}")
-        print(f"   estado: '{data.get('estado', 'Activo')}'")
+        print(f"   estado: '{data['estado']}'")
         
         cursor.callproc("PAQ_ADMIN.REGISTRAR_USUARIO", [
-            data['nombre_usuario'],
-            data['contrasena'],
-            id_rol,
-            data.get('estado', 'Activo'),
-            id_usuario_out
+            data['nombre_usuario'],   # p_nombre_usuario
+            data['contrasena'],       # p_contrasena
+            data['correo'],           # p_correo
+            id_rol,                   # p_id_rol
+            data['estado'],           # p_estado
+            id_usuario_out            # p_id_usuario_out (OUT)
         ])
         
-        nuevo_id = int(id_usuario_out.getvalue())
+        conn.commit()
+        nuevo_id = id_usuario_out.getvalue()
         print(f"✅ Usuario creado con ID: {nuevo_id}")
         
         return jsonify({
@@ -128,7 +220,9 @@ def crear_usuario():
         if "ORA-01722" in error_msg:
             return jsonify({'error': 'Error de formato de datos. Verifique que el rol sea un número válido.'}), 400
         elif "ORA-00001" in error_msg:
-            return jsonify({'error': 'El nombre de usuario ya existe.'}), 409
+            return jsonify({'error': 'El nombre de usuario o correo ya existe.'}), 409
+        elif "ORA-20002" in error_msg:
+            return jsonify({'error': 'El rol especificado no existe.'}), 400
         else:
             return jsonify({'error': f'Error de base de datos: {error_msg}'}), 500
             
@@ -143,7 +237,8 @@ def crear_usuario():
         if conn:
             conn.close()
 
-@admin_bp.route('/usuarios/<int:id_usuario>', methods=['PUT'])
+
+@admin_bp.route('/usuarios/<id_usuario>', methods=['PUT'])
 @jwt_required()
 def actualizar_usuario(id_usuario):
     """Actualiza un usuario existente"""
@@ -153,22 +248,65 @@ def actualizar_usuario(id_usuario):
     
     try:
         data = request.get_json() or {}
+        print(f"🔍 Datos recibidos para actualizar usuario {id_usuario}: {data}")
+        
+        # Validar formato de correo si se proporciona
+        if data.get('correo'):
+            import re
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, data['correo']):
+                return jsonify({'error': 'Formato de correo electrónico inválido'}), 400
+        
+        # Validar id_rol si se proporciona
+        if data.get('id_rol'):
+            try:
+                id_rol = int(str(data['id_rol']).strip())
+                if id_rol < 1 or id_rol > 5:
+                    return jsonify({'error': 'ID de rol debe estar entre 1 y 5'}), 400
+                data['id_rol'] = id_rol
+            except (ValueError, TypeError):
+                return jsonify({'error': 'ID de rol debe ser un número válido'}), 400
         
         conn = cursor = None
         conn = get_connection()
         cursor = conn.cursor()
         
         # Usar el paquete PAQ_ADMIN
+        print(f"📤 Llamando procedimiento de actualización con:")
+        print(f"   id_usuario: '{id_usuario}'")
+        print(f"   nombre_usuario: '{data.get('nombre_usuario', '')}'")
+        print(f"   correo: '{data.get('correo', '')}'")
+        print(f"   contrasena: '{data.get('contrasena', '')}'")
+        print(f"   id_rol: {data.get('id_rol', '')}")
+        print(f"   estado: '{data.get('estado', '')}'")
+        
         cursor.callproc("PAQ_ADMIN.ACTUALIZAR_USUARIO", [
             id_usuario,
             data.get('nombre_usuario'),
+            data.get('correo'),
             data.get('contrasena'),
             data.get('id_rol'),
             data.get('estado')
         ])
         
+        conn.commit()
+        print(f"✅ Usuario {id_usuario} actualizado correctamente")
+        
         return jsonify({'mensaje': 'Usuario actualizado correctamente'}), 200
         
+    except oracledb.Error as oracle_error:
+        if conn:
+            conn.rollback()
+        error_msg = str(oracle_error)
+        print(f"❌ Error de Oracle actualizando usuario: {error_msg}")
+        
+        if "ORA-01722" in error_msg:
+            return jsonify({'error': 'Error de formato de datos. Verifique que el rol sea un número válido.'}), 400
+        elif "ORA-00001" in error_msg:
+            return jsonify({'error': 'El nombre de usuario o correo ya existe.'}), 409
+        else:
+            return jsonify({'error': f'Error de base de datos: {error_msg}'}), 500
+            
     except Exception as e:
         if conn:
             conn.rollback()
@@ -180,7 +318,7 @@ def actualizar_usuario(id_usuario):
         if conn:
             conn.close()
 
-@admin_bp.route('/usuarios/<int:id_usuario>', methods=['DELETE'])
+@admin_bp.route('/usuarios/<id_usuario>', methods=['DELETE'])
 @jwt_required()
 def eliminar_usuario(id_usuario):
     """Elimina un usuario (cambiar estado a Inactivo)"""
@@ -194,9 +332,20 @@ def eliminar_usuario(id_usuario):
         cursor = conn.cursor()
         
         # Usar el paquete PAQ_ADMIN
+        print(f"📤 Eliminando usuario: {id_usuario}")
         cursor.callproc("PAQ_ADMIN.ELIMINAR_USUARIO", [id_usuario])
         
+        conn.commit()
+        print(f"✅ Usuario {id_usuario} desactivado correctamente")
+        
         return jsonify({'mensaje': 'Usuario desactivado correctamente'}), 200
+        
+    except oracledb.Error as oracle_error:
+        if conn:
+            conn.rollback()
+        error_msg = str(oracle_error)
+        print(f"❌ Error de Oracle eliminando usuario: {error_msg}")
+        return jsonify({'error': f'Error de base de datos: {error_msg}'}), 500
         
     except Exception as e:
         if conn:
@@ -264,25 +413,29 @@ def crear_centro():
         print(f"Datos recibidos: {data}")
         
         # Validar campos requeridos
-        if not data.get('nombre'):
-            print("❌ Nombre del centro es requerido")
-            return jsonify({'error': 'El nombre del centro es requerido'}), 400
+        required_fields = ['nombre', 'ubicacion', 'tipo']
+        for field in required_fields:
+            if not data.get(field):
+                print(f"❌ {field} es requerido")
+                return jsonify({'error': f'El campo {field} es requerido'}), 400
         
         conn = cursor = None
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Usar el paquete PAQ_ADMIN
         id_centro_out = cursor.var(oracledb.NUMBER)
         
         cursor.callproc("PAQ_ADMIN.REGISTRAR_CENTRO", [
             data['nombre'],
-            data.get('direccion', ''),
+            data['ubicacion'], 
+            data['tipo'],       # Agregué el parámetro tipo
             id_centro_out
         ])
         
         nuevo_id = int(id_centro_out.getvalue())
         print(f"✅ Centro creado con ID: {nuevo_id}")
+        
+        conn.commit()  # Agregar commit explícito
         
         return jsonify({
             'mensaje': 'Centro creado correctamente',
@@ -304,23 +457,37 @@ def crear_centro():
 @jwt_required()
 def actualizar_centro(id_centro):
     """Actualiza un centro de donación"""
+    print(f"🏥 Solicitud para actualizar centro ID: {id_centro}")
+    
     error = require_admin()
     if error:
         return error
     
     try:
         data = request.get_json() or {}
+        print(f"Datos recibidos para actualización: {data}")
+        
+        # Validar campos requeridos
+        required_fields = ['nombre', 'ubicacion', 'tipo']
+        for field in required_fields:
+            if not data.get(field):
+                print(f"❌ {field} es requerido")
+                return jsonify({'error': f'El campo {field} es requerido'}), 400
         
         conn = cursor = None
         conn = get_connection()
         cursor = conn.cursor()
         
-        # Usar el paquete PAQ_ADMIN
+        # Usar el paquete PAQ_ADMIN con los parámetros correctos
         cursor.callproc("PAQ_ADMIN.ACTUALIZAR_CENTRO", [
             id_centro,
-            data.get('nombre'),
-            data.get('direccion')
+            data['nombre'],
+            data['ubicacion'], 
+            data['tipo'] 
         ])
+        
+        conn.commit() 
+        print(f"✅ Centro ID {id_centro} actualizado correctamente")
         
         return jsonify({'mensaje': 'Centro actualizado correctamente'}), 200
         

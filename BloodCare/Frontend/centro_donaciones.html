@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Administración de Centros - BloodCare</title>
+    <style>
+        .admin-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .admin-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .action-buttons {
+            min-width: 120px;
+        }
+
+        .modal-header {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+        <div class="container">
+            <a class="navbar-brand" href="#">BLOODCARE - ADMIN</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="admin_panel.html">Panel Admin</a></li>
+                    <li class="nav-item"><a class="nav-link" href="registro_donante.html">Registrar Donante</a></li>
+                    <li class="nav-item"><a class="nav-link" href="registro_donacion.html">Registrar Donación</a></li>
+                    <li class="nav-item"><a id="nav-admin" class="nav-link d-none" href="admin_panel.html">Panel Admin</a></li>
+                    <li class="nav-item"><a id="nav-logout" class="nav-link" href="#" onclick="logout()">Cerrar
+                            Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Administración de Centros de Donación</h2>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#centroModal"
+                    onclick="abrirModalNuevo()">
+                    <i class="bi bi-plus-lg me-2"></i>Nuevo Centro
+                </button>
+            </div>
+
+            <!-- Alert para mostrar mensajes -->
+            <div id="alert-container"></div>
+
+            <!-- Tarjeta de estadísticas -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card stat-card">
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-12">
+                                    <h3 id="total-centros">0</h3>
+                                    <p class="mb-0">Total de Centros Registrados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label">Buscar por Nombre o Ubicación</label>
+                            <input type="text" id="filtro-nombre" class="form-control" placeholder="Buscar centro..."
+                                oninput="aplicarFiltros()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de centros -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-building me-2"></i>Lista de Centros de Donación</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Ubicación</th>
+                                    <th>Tipo</th>
+                                    <th class="text-center action-buttons">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-centros">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="spinner-border text-danger" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Cargando centros...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para crear/editar centro -->
+    <div class="modal fade" id="centroModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title">Nuevo Centro de Donación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="form-centro">
+                    <div class="modal-body">
+                        <input type="hidden" id="centro-id">
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Centro *</label>
+                            <input type="text" id="centro-nombre" class="form-control" required
+                                placeholder="Ej: Centro de Donación Nacional">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Ubicación *</label>
+                            <input type="text" id="centro-ubicacion" class="form-control" required
+                                placeholder="Ej: Av. Principal 123, Lima">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Centro *</label>
+                            <input type="text" id="centro-tipo" class="form-control" required
+                                placeholder="Ej: Público, Privado, Hospital, etc.">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger" id="btn-guardar">
+                            <span id="btn-text">Guardar Centro</span>
+                            <span id="btn-loading" class="d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Guardando...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div class="modal fade" id="confirmarEliminarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el centro <strong id="centro-eliminar-nombre"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarEliminacion()" id="btn-eliminar">
+                        <i class="bi bi-trash me-2"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
+        © 2025 BLOODCARE. Todos los derechos reservados.
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Variables globales
+        let centrosData = [];
+        let centroAEliminar = null;
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function () {
+            if (checkAuth()) {
+                cargarCentros();
+            }
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                showAlert('No hay sesión activa. Por favor, inicie sesión.', 'warning');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+                return false;
+            }
+            return true;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            showAlert('Sesión cerrada correctamente', 'success');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1000);
+        }
+
+        // Cargar centros desde la API
+        async function cargarCentros() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/admin/centros`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar los centros');
+                }
+
+                centrosData = await response.json();
+                mostrarCentros(centrosData);
+                actualizarEstadisticas();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar los centros de donación', 'error');
+                document.getElementById('tabla-centros').innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-4">
+              <i class="bi bi-exclamation-circle text-danger fs-1"></i>
+              <p class="mt-2 text-muted">Error al cargar los centros</p>
+            </td>
+          </tr>
+        `;
+            }
+        }
+
+        // Mostrar centros en la tabla
+        function mostrarCentros(centros) {
+            const tbody = document.getElementById('tabla-centros');
+
+            if (centros.length === 0) {
+                tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-4">
+              <i class="bi bi-building text-muted fs-1"></i>
+              <p class="mt-2 text-muted">No hay centros registrados</p>
+            </td>
+          </tr>
+        `;
+                return;
+            }
+
+            tbody.innerHTML = centros.map(centro => `
+        <tr>
+          <td>${centro.id_centro}</td>
+          <td>${centro.nombre}</td>
+          <td>${centro.ubicacion}</td>
+          <td>
+            <span class="badge bg-primary">${centro.tipo}</span>
+          </td>
+          <td class="text-center action-buttons">
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarCentro(${centro.id_centro})" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="eliminarCentro(${centro.id_centro}, '${centro.nombre}')" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+        }
+
+        // Actualizar estadísticas
+        function actualizarEstadisticas() {
+            const total = centrosData.length;
+            document.getElementById('total-centros').textContent = total;
+        }
+
+        // Aplicar filtros
+        function aplicarFiltros() {
+            const filtroNombre = document.getElementById('filtro-nombre').value.toLowerCase();
+
+            let centrosFiltrados = centrosData;
+
+            if (filtroNombre) {
+                centrosFiltrados = centrosFiltrados.filter(c =>
+                    c.nombre.toLowerCase().includes(filtroNombre) ||
+                    c.ubicacion.toLowerCase().includes(filtroNombre)
+                );
+            }
+
+            mostrarCentros(centrosFiltrados);
+        }
+
+        // Abrir modal para nuevo centro
+        function abrirModalNuevo() {
+            document.getElementById('modal-title').textContent = 'Nuevo Centro de Donación';
+            document.getElementById('form-centro').reset();
+            document.getElementById('centro-id').value = '';
+            document.getElementById('btn-text').textContent = 'Guardar Centro';
+        }
+
+        // Editar centro
+        function editarCentro(id) {
+            const centro = centrosData.find(c => c.id_centro === id);
+            if (!centro) return;
+
+            document.getElementById('modal-title').textContent = 'Editar Centro de Donación';
+            document.getElementById('centro-id').value = centro.id_centro;
+            document.getElementById('centro-nombre').value = centro.nombre;
+            document.getElementById('centro-ubicacion').value = centro.ubicacion;
+            document.getElementById('centro-tipo').value = centro.tipo;
+            document.getElementById('btn-text').textContent = 'Actualizar Centro';
+
+            const modal = new bootstrap.Modal(document.getElementById('centroModal'));
+            modal.show();
+        }
+
+        // Eliminar centro
+        function eliminarCentro(id, nombre) {
+            centroAEliminar = id;
+            document.getElementById('centro-eliminar-nombre').textContent = nombre;
+            const modal = new bootstrap.Modal(document.getElementById('confirmarEliminarModal'));
+            modal.show();
+        }
+
+        // Confirmar eliminación
+        async function confirmarEliminacion() {
+            if (!centroAEliminar) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/admin/centros/${centroAEliminar}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al eliminar el centro');
+                }
+
+                showAlert('Centro eliminado correctamente', 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmarEliminarModal'));
+                modal.hide();
+                await cargarCentros();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al eliminar el centro', 'error');
+            }
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('form-centro').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const id = document.getElementById('centro-id').value;
+            const datos = {
+                nombre: document.getElementById('centro-nombre').value.trim(),
+                ubicacion: document.getElementById('centro-ubicacion').value.trim(),
+                tipo: document.getElementById('centro-tipo').value.trim()
+            };
+
+            // Validaciones
+            if (!datos.nombre || !datos.ubicacion || !datos.tipo) {
+                showAlert('Todos los campos son obligatorios', 'error');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const token = localStorage.getItem('token');
+                const url = id ? `${API_BASE_URL}/admin/centros/${id}` : `${API_BASE_URL}/admin/centros`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(datos)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al guardar el centro');
+                }
+
+                const mensaje = id ? 'Centro actualizado correctamente' : 'Centro registrado correctamente';
+                showAlert(mensaje, 'success');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('centroModal'));
+                modal.hide();
+
+                await cargarCentros();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert(error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Funciones utilitarias
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            const alertClass = type === 'success' ? 'alert-success' :
+                type === 'error' ? 'alert-danger' :
+                    type === 'warning' ? 'alert-warning' : 'alert-info';
+
+            alertContainer.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        function setLoading(loading) {
+            const btnText = document.getElementById('btn-text');
+            const btnLoading = document.getElementById('btn-loading');
+            const submitBtn = document.getElementById('btn-guardar');
+
+            if (loading) {
+                btnText.classList.add('d-none');
+                btnLoading.classList.remove('d-none');
+                submitBtn.disabled = true;
+            } else {
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

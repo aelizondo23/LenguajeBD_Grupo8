@@ -45,14 +45,8 @@ function protectPage() {
   const loggedIn = isLoggedIn();
   console.log("isLoggedIn() resultado:", loggedIn);
   
-  console.log("🔍 Ejecutando protectPage()...");
-  
-  
-  console.log("🔍 Verificando autenticación...");
-  
   if (!isLoggedIn()) {
     console.log("❌ No hay token válido, redirigiendo al login");
-    alert("DEBUG: No hay token válido. ¿Hiciste login?");
     alert("No hay sesión activa. Redirigiendo al login...");
     window.location.href = "login.html";
     return false;
@@ -60,7 +54,6 @@ function protectPage() {
   
   console.log("✅ Token válido, página protegida");
   console.log("🔍 === FIN PROTECTPAGE ===");
-  return true;
   return true;
 }
 

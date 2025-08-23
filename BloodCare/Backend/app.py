@@ -8,6 +8,10 @@ from auth import auth_bp
 from donantes import donantes_bp
 from donaciones import donaciones_bp
 from admin import admin_bp
+from tipo_sangre import tipo_sangre_bp
+from inventario import inventario_bp
+from rechazo import rechazo_bp
+from causa_rechazo import causa_rechazo_bp
 
 def create_app():
     """Factory para crear la aplicación Flask"""
@@ -26,7 +30,10 @@ def create_app():
     app.register_blueprint(donantes_bp, url_prefix="/api/donantes")
     app.register_blueprint(donaciones_bp, url_prefix="/api/donaciones")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
-    
+    app.register_blueprint(tipo_sangre_bp, url_prefix="/api/tipo_sangre")
+    app.register_blueprint(inventario_bp, url_prefix="/api/inventario")
+    app.register_blueprint(rechazo_bp, url_prefix="/api/rechazo")
+    app.register_blueprint(causa_rechazo_bp, url_prefix="/api/causa_rechazo")
     return app
 
 if __name__ == '__main__':
@@ -51,6 +58,8 @@ if __name__ == '__main__':
     print("      POST /api/donaciones/registrar")
     print("      GET  /api/donaciones/<id>")
     print("      GET  /api/donaciones/listar")
+    print("      PUT  /api/donaciones/<id>")
+    print("      DELETE  /api/donaciones/<id>")
     print("   🔧 ADMIN:")
     print("      GET  /api/admin/usuarios")
     print("      POST /api/admin/usuarios")
@@ -70,6 +79,16 @@ if __name__ == '__main__':
     print("   jefatura1 / jefatura123 (Jefatura)")
     print("=" * 60)
     
+    print("Tipo de sangre disponibles:")
+    print("      GET  /api/tipo_sangre/listar")
+    print("=" * 60)
+    print("Roles")
+    print("      GET  /api/admin/roles")
+    print("=" * 60)
+    print("Inventario")
+    print("      GET  /api/inventario/listar")
+    print("=" * 60)
+
     app.run(
         debug=Config.DEBUG,
         host=Config.HOST,

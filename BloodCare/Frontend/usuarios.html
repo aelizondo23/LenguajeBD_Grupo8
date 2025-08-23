@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Administración de Usuarios - BloodCare</title>
+    <style>
+        .admin-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .admin-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .action-buttons {
+            min-width: 120px;
+        }
+
+        .modal-header {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .badge-activo {
+            background-color: #198754;
+        }
+
+        .badge-inactivo {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+        <div class="container">
+            <a class="navbar-brand" href="#">BLOODCARE - ADMIN</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="admin_panel.html">Panel Admin</a></li>
+                    <li class="nav-item"><a class="nav-link" href="admin_centros.html">Centros</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="admin_usuarios.html">Usuarios</a></li>
+                    <li class="nav-item"><a id="nav-logout" class="nav-link" href="#" onclick="logout()">Cerrar
+                            Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Administración de Usuarios</h2>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#usuarioModal"
+                    onclick="abrirModalNuevo()">
+                    <i class="bi bi-plus-lg me-2"></i>Nuevo Usuario
+                </button>
+            </div>
+
+            <!-- Alert para mostrar mensajes -->
+            <div id="alert-container"></div>
+
+            <!-- Tarjetas de estadísticas -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <h3 id="total-usuarios">0</h3>
+                            <p class="mb-0">Total de Usuarios</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3 id="usuarios-activos">0</h3>
+                            <p class="mb-0">Usuarios Activos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h3 id="usuarios-inactivos">0</h3>
+                            <p class="mb-0">Usuarios Inactivos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Buscar Usuario</label>
+                            <input type="text" id="filtro-buscar" class="form-control" 
+                                placeholder="Buscar por nombre o ID..." oninput="aplicarFiltros()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Filtrar por Estado</label>
+                            <select id="filtro-estado" class="form-select" onchange="aplicarFiltros()">
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Filtrar por Rol</label>
+                            <select id="filtro-rol" class="form-select" onchange="aplicarFiltros()">
+                                <option value="">Todos los roles</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de usuarios -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Lista de Usuarios</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID Usuario</th>
+                                    <th>Nombre de Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th class="text-center action-buttons">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-usuarios">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="spinner-border text-danger" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Cargando usuarios...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para crear/editar usuario -->
+    <div class="modal fade" id="usuarioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title">Nuevo Usuario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="form-usuario">
+                    <div class="modal-body">
+                        <input type="hidden" id="usuario-id-original">
+                        <input type="hidden" id="es-edicion">
+
+                        <div class="mb-3">
+                            <label class="form-label">ID Usuario *</label>
+                            <input type="text" id="usuario-id" class="form-control" required
+                                placeholder="Ej: USR001, admin123, etc.">
+                            <div class="form-text">Identificador único del usuario (no se puede cambiar al editar)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de Usuario *</label>
+                            <input type="text" id="usuario-nombre" class="form-control" required
+                                placeholder="Ej: juan_perez, admin, etc.">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Correo Electrónico *</label>
+                            <input type="email" id="usuario-correo" class="form-control" required
+                                placeholder="usuario@ejemplo.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña *</label>
+                            <input type="password" id="usuario-contrasena" class="form-control" required
+                                placeholder="Mínimo 6 caracteres">
+                            <div class="form-text" id="password-help">Para usuarios nuevos es obligatoria. Al editar se puede modificar o mantener la actual.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Estado *</label>
+                            <select id="usuario-estado" class="form-select" required>
+                                <option value="">Seleccione un estado</option>
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Rol *</label>
+                            <select id="usuario-rol" class="form-select" required>
+                                <option value="">Seleccione un rol</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger" id="btn-guardar">
+                            <span id="btn-text">Guardar Usuario</span>
+                            <span id="btn-loading" class="d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Guardando...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div class="modal fade" id="confirmarEliminarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar al usuario <strong id="usuario-eliminar-nombre"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer y eliminará toda la información del usuario.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarEliminacion()" id="btn-eliminar">
+                        <i class="bi bi-trash me-2"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-danger text-white text-center py-3 mt-5 fw-bold fs-5">
+        © 2025 BLOODCARE. Todos los derechos reservados.
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Variables globales
+        let usuariosData = [];
+        let rolesData = [];
+        let usuarioAEliminar = null;
+        let correosUsuarios = {}; // Para almacenar correos temporalmente
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function () {
+            if (checkAuth()) {
+                Promise.all([cargarRoles(), cargarUsuarios()]);
+            }
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                showAlert('No hay sesión activa. Por favor, inicie sesión.', 'warning');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+                return false;
+            }
+            return true;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            showAlert('Sesión cerrada correctamente', 'success');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1000);
+        }
+
+        // Cargar roles desde la API
+        async function cargarRoles() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/admin/roles`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar los roles');
+                }
+
+                rolesData = await response.json();
+                poblarSelectRoles();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar los roles', 'error');
+            }
+        }
+
+        // Poblar selects de roles
+        function poblarSelectRoles() {
+            const selectRolModal = document.getElementById('usuario-rol');
+            const selectRolFiltro = document.getElementById('filtro-rol');
+            
+            // Limpiar completamente y recrear las opciones
+            selectRolModal.innerHTML = '';
+            selectRolFiltro.innerHTML = '';
+            
+            // Agregar opciones por defecto
+            selectRolModal.appendChild(new Option('Seleccione un rol', ''));
+            selectRolFiltro.appendChild(new Option('Todos los roles', ''));
+            
+            // Agregar roles desde la API
+            rolesData.forEach(rol => {
+                selectRolModal.appendChild(new Option(rol.nombre_rol, rol.id_rol));
+                selectRolFiltro.appendChild(new Option(rol.nombre_rol, rol.id_rol));
+            });
+        }
+
+        // Cargar usuarios desde la API
+        async function cargarUsuarios() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/admin/usuarios`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar los usuarios');
+                }
+
+                usuariosData = await response.json();
+                mostrarUsuarios(usuariosData);
+                actualizarEstadisticas();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar los usuarios', 'error');
+                document.getElementById('tabla-usuarios').innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-4">
+              <i class="bi bi-exclamation-circle text-danger fs-1"></i>
+              <p class="mt-2 text-muted">Error al cargar los usuarios</p>
+            </td>
+          </tr>
+        `;
+            }
+        }
+
+        // Mostrar usuarios en la tabla
+        function mostrarUsuarios(usuarios) {
+            const tbody = document.getElementById('tabla-usuarios');
+
+            if (usuarios.length === 0) {
+                tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-4">
+              <i class="bi bi-people text-muted fs-1"></i>
+              <p class="mt-2 text-muted">No hay usuarios registrados</p>
+            </td>
+          </tr>
+        `;
+                return;
+            }
+
+            tbody.innerHTML = usuarios.map(usuario => {
+                // La API devuelve el rol como string directamente
+                const rolNombre = usuario.rol || 'Sin rol';
+                const estadoBadge = usuario.estado.toLowerCase() === 'activo' ? 'badge-activo' : 'badge-inactivo';
+                
+                return `
+          <tr>
+            <td>${usuario.id_usuario}</td>
+            <td>${usuario.nombre_usuario}</td>
+            <td>
+              <span class="badge bg-info">${rolNombre}</span>
+            </td>
+            <td>
+              <span class="badge ${estadoBadge}">${usuario.estado.toUpperCase()}</span>
+            </td>
+            <td class="text-center action-buttons">
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="editarUsuario('${usuario.id_usuario}')" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="eliminarUsuario('${usuario.id_usuario}', '${usuario.nombre_usuario}')" title="Eliminar">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        // Actualizar estadísticas
+        function actualizarEstadisticas() {
+            const total = usuariosData.length;
+            const activos = usuariosData.filter(u => u.estado.toLowerCase() === 'activo').length;
+            const inactivos = usuariosData.filter(u => u.estado.toLowerCase() === 'inactivo').length;
+
+            document.getElementById('total-usuarios').textContent = total;
+            document.getElementById('usuarios-activos').textContent = activos;
+            document.getElementById('usuarios-inactivos').textContent = inactivos;
+        }
+
+        // Aplicar filtros
+        function aplicarFiltros() {
+            const filtroBuscar = document.getElementById('filtro-buscar').value.toLowerCase();
+            const filtroEstado = document.getElementById('filtro-estado').value.toLowerCase();
+            const filtroRol = document.getElementById('filtro-rol').value;
+
+            let usuariosFiltrados = usuariosData;
+
+            if (filtroBuscar) {
+                usuariosFiltrados = usuariosFiltrados.filter(u =>
+                    u.nombre_usuario.toLowerCase().includes(filtroBuscar) ||
+                    u.id_usuario.toLowerCase().includes(filtroBuscar)
+                );
+            }
+
+            if (filtroEstado) {
+                usuariosFiltrados = usuariosFiltrados.filter(u => u.estado.toLowerCase() === filtroEstado);
+            }
+
+            if (filtroRol) {
+                // Buscar el nombre del rol correspondiente al ID seleccionado
+                const rolSeleccionado = rolesData.find(r => r.id_rol.toString() === filtroRol);
+                if (rolSeleccionado) {
+                    usuariosFiltrados = usuariosFiltrados.filter(u => u.rol === rolSeleccionado.nombre_rol);
+                }
+            }
+
+            mostrarUsuarios(usuariosFiltrados);
+        }
+
+        // Abrir modal para nuevo usuario
+        function abrirModalNuevo() {
+            document.getElementById('modal-title').textContent = 'Nuevo Usuario';
+            document.getElementById('form-usuario').reset();
+            document.getElementById('usuario-id-original').value = '';
+            document.getElementById('es-edicion').value = 'false';
+            document.getElementById('btn-text').textContent = 'Guardar Usuario';
+            document.getElementById('usuario-id').disabled = false;
+            document.getElementById('usuario-contrasena').required = true;
+            document.getElementById('password-help').textContent = 'Para usuarios nuevos es obligatoria. Al editar se puede modificar o mantener la actual.';
+        }
+
+        // Editar usuario
+        async function editarUsuario(id) {
+            try {
+                // Obtener datos completos del usuario desde la API
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/admin/usuarios/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar los datos del usuario');
+                }
+
+                const usuario = await response.json();
+
+                document.getElementById('modal-title').textContent = 'Editar Usuario';
+                document.getElementById('usuario-id-original').value = usuario.id_usuario;
+                document.getElementById('es-edicion').value = 'true';
+                document.getElementById('usuario-id').value = usuario.id_usuario;
+                document.getElementById('usuario-nombre').value = usuario.nombre_usuario;
+                document.getElementById('usuario-correo').value = usuario.correo || '';
+                document.getElementById('usuario-contrasena').value = usuario.contrasena || '';
+                document.getElementById('usuario-estado').value = usuario.estado.toLowerCase();
+                
+                // Buscar el ID del rol basado en el nombre
+                const rol = rolesData.find(r => r.nombre_rol === usuario.rol);
+                document.getElementById('usuario-rol').value = rol ? rol.id_rol : '';
+                
+                document.getElementById('btn-text').textContent = 'Actualizar Usuario';
+                document.getElementById('usuario-id').disabled = true;
+                document.getElementById('usuario-contrasena').required = false;
+                document.getElementById('password-help').textContent = 'Para usuarios nuevos es obligatoria. Al editar se puede modificar o mantener la actual.';
+
+                const modal = new bootstrap.Modal(document.getElementById('usuarioModal'));
+                modal.show();
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar los datos del usuario para editar', 'error');
+            }
+        }
+
+        // Eliminar usuario
+        function eliminarUsuario(id, nombre) {
+            usuarioAEliminar = id;
+            document.getElementById('usuario-eliminar-nombre').textContent = nombre;
+            const modal = new bootstrap.Modal(document.getElementById('confirmarEliminarModal'));
+            modal.show();
+        }
+
+        // Confirmar eliminación
+        async function confirmarEliminacion() {
+            if (!usuarioAEliminar) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/admin/usuarios/${usuarioAEliminar}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al eliminar el usuario');
+                }
+
+                showAlert('Usuario eliminado correctamente', 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmarEliminarModal'));
+                modal.hide();
+                await cargarUsuarios();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('form-usuario').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const esEdicion = document.getElementById('es-edicion').value === 'true';
+            const idOriginal = document.getElementById('usuario-id-original').value;
+            
+            const datos = {
+                id_usuario: document.getElementById('usuario-id').value.trim(),
+                nombre_usuario: document.getElementById('usuario-nombre').value.trim(),
+                correo: document.getElementById('usuario-correo').value.trim(),
+                contrasena: document.getElementById('usuario-contrasena').value,
+                estado: document.getElementById('usuario-estado').value,
+                id_rol: parseInt(document.getElementById('usuario-rol').value)
+            };
+
+            // Validaciones
+            if (!datos.id_usuario || !datos.nombre_usuario || !datos.correo || !datos.estado || !datos.id_rol) {
+                showAlert('Todos los campos son obligatorios', 'error');
+                return;
+            }
+
+            if (!esEdicion && !datos.contrasena) {
+                showAlert('La contraseña es obligatoria para usuarios nuevos', 'error');
+                return;
+            }
+
+            if (datos.contrasena && datos.contrasena.length < 6) {
+                showAlert('La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+
+            // Si es edición y no se proporcionó contraseña, usar la original
+            if (esEdicion && !datos.contrasena) {
+                // Buscar la contraseña actual del usuario
+                const usuarioActual = usuariosData.find(u => u.id_usuario === idOriginal);
+                if (usuarioActual && usuarioActual.contrasena) {
+                    datos.contrasena = usuarioActual.contrasena;
+                } else {
+                    delete datos.contrasena;
+                }
+            }
+
+            setLoading(true);
+
+            try {
+                const token = localStorage.getItem('token');
+                const url = esEdicion ? `${API_BASE_URL}/admin/usuarios/${idOriginal}` : `${API_BASE_URL}/admin/usuarios`;
+                const method = esEdicion ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(datos)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al guardar el usuario');
+                }
+
+                const mensaje = esEdicion ? 'Usuario actualizado correctamente' : 'Usuario registrado correctamente';
+                showAlert(mensaje, 'success');
+
+                // Guardar correo para futuros usos
+                if (datos.correo) {
+                    correosUsuarios[datos.id_usuario] = datos.correo;
+                }
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('usuarioModal'));
+                modal.hide();
+
+                await cargarUsuarios();
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert(error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Funciones utilitarias
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            const alertClass = type === 'success' ? 'alert-success' :
+                type === 'error' ? 'alert-danger' :
+                    type === 'warning' ? 'alert-warning' : 'alert-info';
+
+            alertContainer.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        function setLoading(loading) {
+            const btnText = document.getElementById('btn-text');
+            const btnLoading = document.getElementById('btn-loading');
+            const submitBtn = document.getElementById('btn-guardar');
+
+            if (loading) {
+                btnText.classList.add('d-none');
+                btnLoading.classList.remove('d-none');
+                submitBtn.disabled = true;
+            } else {
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -94,3 +94,4 @@ def get_cursor_data(proc_name, params=None):
             cursor.close()
         if conn:
             conn.close()
+
